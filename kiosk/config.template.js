@@ -54,14 +54,10 @@ let config = {
 			}
 		},
 		{
-			module: "MMM-WiFiPassword",
-			position: "bottom_left",
-			config: { network: "BYTT-MEG", password: "BYTT-MEG", authType: "WPA", header: "WiFi", layoutVertical: true }
-		},
-		{
 			module: "MMM-pages",
 			config: {
-				timings: { default: 20000 },
+				timings: { default: 20000, wifi: 45000 }, // «wifi» er en skjult side: vises kun på forespørsel
+				hiddenPages: { wifi: ["clock", "MMM-WiFiPassword"] },
 				modules: [
 					["MMM-Kolumbus", "MMM-GoogleCast"], // side 0 (begge Kolumbus-instansene)
 					["MMM-MyScoreboard", "MMM-MyStandings"], // side 1
@@ -69,7 +65,7 @@ let config = {
 				],
 				fixed: [
 					"alert", "MMM-Remote-Control", "MMM-MagicMover", "MMM-WeatherEffects", "clock", "weather",
-					"compliments", "MMM-WiFiPassword", "MMM-OnSpotify", "MMM-page-indicator"
+					"compliments", "MMM-OnSpotify", "MMM-page-indicator"
 				]
 			}
 		},
@@ -78,6 +74,11 @@ let config = {
 			position: "bottom_right",
 			disabled: !SPOTIFY.clientID,
 			config: { ...SPOTIFY }
+		},
+		{
+			module: "MMM-WiFiPassword",
+			position: "middle_center",
+			config: { network: "BYTT-MEG", password: "BYTT-MEG", authType: "WPA", header: "Gjesten-WiFi", qrSize: 260, layoutVertical: true, colorDark: "#000000", colorLight: "#ffffff" }
 		},
 		{ module: "MMM-page-indicator", position: "bottom_bar", config: { pages: 3, activeBright: true } },
 

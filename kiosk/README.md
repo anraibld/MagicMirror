@@ -7,6 +7,7 @@
 - **Node:** egen Node 24 i `~/.local/node` (MagicMirror ≥ 2.38 krever ≥ 22.22.2).
 - **Nett:** ethernet først, WiFi som reserve → `sudo bash kiosk/net-priority.sh` (én gang).
 - **Sider:** 0 buss (Kolumbus) + Cast · 1 fotball (Viking `VFK`, Man United `MAN`) · 2 nyheter (Aftenbladet) + farevarsel (fylke 11). Fast: klokke, komplimenter, vær (YR, Stavanger), WiFi-QR, Spotify.
+- **Gjeste-WiFi:** skjult side (ikke permanent på skjermen pga. innbrenning). Vis den fra telefonen: `http://<pi-ip>:8080/remote.html` → knappen for siden «wifi» (forsvinner etter 45 s).
 - **Gjenstår:** Spotify-nøkler og GoogleCast-enhets-ID i `config/config.js`; riktig busstopp i `MMM-Kolumbus`.
 
 ## Installere på en ny Pi
