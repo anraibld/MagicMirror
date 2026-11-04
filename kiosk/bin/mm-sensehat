@@ -21,7 +21,7 @@ Side 2 – SENSE HAT-SENSORER (blå stolper)
 Bruk: mm-sensehat            (daemon)
       mm-sensehat --selftest (skriver alle sidene som tekst, uten maskinvare)
 """
-import colorsys, glob, json, math, os, select, shutil, socket, struct, subprocess, sys, time, urllib.request
+import colorsys, glob, json, math, mmap, os, select, shutil, socket, struct, subprocess, sys, time, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 HOME = os.path.expanduser("~")
@@ -326,8 +326,16 @@ def devices():
 
 
 def draw(fbdev, px, b=1.0):
-    with open(fbdev, "wb") as f:
-        f.write(b"".join(rgb565(c) for c in scale(px, b)))
+    """Skriv via mmap (som sense_hat-biblioteket): rpi-sense-fb oppdaterer LED-brikken først da, ikke ved vanlig write()."""
+    data = b"".join(rgb565(c) for c in scale(px, b))
+    fd = os.open(fbdev, os.O_RDWR)
+    try:
+        m = mmap.mmap(fd, len(data), mmap.MAP_SHARED, mmap.PROT_READ | mmap.PROT_WRITE)
+        m[:] = data
+        m.flush()
+        m.close()
+    finally:
+        os.close(fd)
 
 
 KEY_ENTER, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT = 28, 103, 108, 105, 106
