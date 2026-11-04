@@ -1,0 +1,10 @@
+[Unit]
+Description=Sjekk MagicMirror-oppdateringer
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=6h
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

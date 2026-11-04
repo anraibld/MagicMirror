@@ -1,0 +1,15 @@
+[Unit]
+Description=MagicMirror server
+After=network.target
+
+[Service]
+WorkingDirectory=%h/MagicMirror
+Environment=PATH=%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin
+ExecStartPre=-%h/.local/bin/mm-deps
+ExecStart=%h/.local/node/bin/node ./serveronly
+TimeoutStartSec=900
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

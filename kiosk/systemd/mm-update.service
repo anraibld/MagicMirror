@@ -1,0 +1,7 @@
+[Unit]
+Description=MagicMirror update check
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/mm-update
+TimeoutStartSec=1800

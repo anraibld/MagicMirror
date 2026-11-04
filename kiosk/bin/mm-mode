@@ -1,0 +1,19 @@
+#!/bin/bash
+# mm-mode [toggle|mirror|desktop] – bytt mellom MagicMirror-kiosken og vanlig skrivebord (Super+M)
+PROFILE="$HOME/.cache/mm-kiosk"
+running() { pgrep -u "$USER" -f -- "--user-data-dir=$PROFILE" >/dev/null; }
+stop() { pkill -u "$USER" -f -- "--user-data-dir=$PROFILE"; }
+start() {
+  until curl -sf -o /dev/null http://localhost:8080; do sleep 2; done
+  mkdir -p "$PROFILE"
+  sed -i 's/"exit_type":"Crashed"/"exit_type":"Normal"/' "$PROFILE/Default/Preferences" 2>/dev/null
+  nohup chromium --kiosk --ozone-platform=wayland --user-data-dir="$PROFILE" --noerrdialogs \
+    --disable-infobars --disable-session-crashed-bubble --no-first-run --password-store=basic \
+    http://localhost:8080 >/dev/null 2>&1 &
+}
+case "${1:-toggle}" in
+  mirror)  running || start ;;
+  desktop) running && stop ;;
+  toggle)  if running; then stop; else start; fi ;;
+  *) echo "bruk: mm-mode [toggle|mirror|desktop]" >&2; exit 1 ;;
+esac

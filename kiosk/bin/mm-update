@@ -1,0 +1,37 @@
+#!/bin/bash
+# Sjekker origin/master (MagicMirror-repoet) + tredjepartsmoduler, oppdaterer, og ruller tilbake hvis speilet ikke kommer opp.
+export PATH="$HOME/.local/node/bin:$PATH"
+MM="$HOME/MagicMirror"; ST="$HOME/.cache/mm"; mkdir -p "$ST"
+cd "$MM" || exit 0
+log() { echo "[$(date '+%F %T')] $*" | tee -a "$ST/update.log"; }
+curl -sf -m 10 -o /dev/null https://github.com || { log "offline – hopper over"; exit 0; }
+
+mod_heads() { for d in "$MM"/modules/*/; do [ -d "$d/.git" ] && git -C "$d" rev-parse HEAD; done; }
+old=$(git rev-parse HEAD); oldmods=$(mod_heads)
+
+if git fetch -q origin master; then
+  if [ "$(git rev-parse origin/master)" != "$old" ]; then
+    git merge --ff-only -q origin/master || log "kan ikke fast-forwarde origin/master (lokale endringer?)"
+  fi
+else log "git fetch feilet"; fi
+
+# tredjepartsmoduler fra kiosk/modules.list ("navn url")
+while read -r name url; do
+  [ -z "${name:-}" ] || [[ $name == \#* ]] && continue
+  if [ -d "modules/$name/.git" ]; then git -C "modules/$name" pull -q --ff-only || log "pull feilet: $name"
+  elif [ ! -e "modules/$name" ]; then git clone -q --depth 1 "$url" "modules/$name" || log "clone feilet: $name"; fi
+done < kiosk/modules.list
+
+new=$(git rev-parse HEAD)
+bash kiosk/install.sh >/dev/null 2>&1   # synker skript, units og egne moduler fra repoet
+if [ "$new" = "$old" ] && [ "$(mod_heads)" = "$oldmods" ]; then
+  "$HOME/.local/bin/mm-deps" >/dev/null 2>&1; log "ingen nye endringer ($(git describe --tags --always))"; exit 0
+fi
+
+log "oppdaterer: ${old:0:8} -> ${new:0:8}"
+"$HOME/.local/bin/mm-deps"
+systemctl --user restart magicmirror
+for _ in $(seq 45); do sleep 2; curl -sf -o /dev/null http://localhost:8080 && { log "OK ($(git describe --tags --always))"; exit 0; }; done
+log "speilet kom ikke opp – ruller tilbake til ${old:0:8}"
+git reset -q --hard "$old"; "$HOME/.local/bin/mm-deps"; systemctl --user restart magicmirror
+exit 1
