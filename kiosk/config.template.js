@@ -1,5 +1,9 @@
 /* MagicMirror² config – Stavanger, YR, pages.
  * NB: this file is gitignored (contains WiFi password + Spotify keys). */
+// Fyll inn for å aktivere (ellers skjules modulene helt):
+const SPOTIFY = { clientID: "", clientSecret: "", accessToken: "", refreshToken: "" };
+const CAST_DEVICE = ""; // enhets-ID fra MMM-GoogleCast README
+
 let config = {
 	address: "0.0.0.0", // needed for MMM-Remote-Control from phone
 	port: 8080,
@@ -16,7 +20,7 @@ let config = {
 	modules: [
 		// ---------- Faste (vises alltid) ----------
 		{ module: "alert" },
-		{ module: "MMM-Remote-Control", position: "bottom_left", config: { showQRCode: true } },
+		{ module: "MMM-Remote-Control", position: "bottom_left", config: { showQRCode: false } },
 		{ module: "MMM-MagicMover", config: { updateInterval: 10 * 60 * 1000, maxMove: 15 } }, // mot innbrenning
 		{ module: "MMM-WeatherEffects", position: "fullscreen_above" },
 		{ module: "clock", position: "top_left" },
@@ -24,7 +28,7 @@ let config = {
 			module: "weather",
 			position: "top_right",
 			config: {
-				weatherProvider: "yrno",
+				weatherProvider: "yr",
 				type: "current",
 				lat: 58.97,
 				lon: 5.7331, // Stavanger
@@ -35,7 +39,7 @@ let config = {
 			module: "weather",
 			position: "top_right",
 			header: "Værmelding Stavanger",
-			config: { weatherProvider: "yrno", type: "forecast", lat: 58.97, lon: 5.7331, maxNumberOfDays: 5, colored: true }
+			config: { weatherProvider: "yr", type: "forecast", lat: 58.97, lon: 5.7331, maxNumberOfDays: 5, colored: true }
 		},
 		{
 			module: "compliments",
@@ -52,25 +56,14 @@ let config = {
 		{
 			module: "MMM-WiFiPassword",
 			position: "bottom_left",
-			config: { network: "BYTT-MEG", password: "BYTT-MEG", authType: "WPA", header: "WiFi", qrSize: 100, layoutVertical: false }
-		},
-		{
-			module: "MMM-OnSpotify",
-			position: "bottom_right",
-			config: {
-				// TODO: fyll inn fra Spotify-appen din / MMM-OnSpotify-oppsettet
-				clientID: "key",
-				clientSecret: "key",
-				accessToken: "key",
-				refreshToken: "key"
-			}
+			config: { network: "BYTT-MEG", password: "BYTT-MEG", authType: "WPA", header: "WiFi", layoutVertical: true }
 		},
 		{
 			module: "MMM-pages",
 			config: {
 				timings: { default: 20000 },
 				modules: [
-					["MMM-Kolumbus", "MMM-GoogleCast"], // side 0
+					["MMM-Kolumbus", "MMM-GoogleCast"], // side 0 (begge Kolumbus-instansene)
 					["MMM-MyScoreboard", "MMM-MyStandings"], // side 1
 					["newsfeed", "MMM-Farevarsel"] // side 2
 				],
@@ -80,15 +73,28 @@ let config = {
 				]
 			}
 		},
+		{
+			module: "MMM-OnSpotify",
+			position: "bottom_right",
+			disabled: !SPOTIFY.clientID,
+			config: { ...SPOTIFY }
+		},
 		{ module: "MMM-page-indicator", position: "bottom_bar", config: { pages: 3, activeBright: true } },
 
 		// ---------- Side 0: transport + Cast ----------
-		{ module: "MMM-Kolumbus", position: "top_left", header: "Buss – Kolumbus", config: { maxDepartures: 8 } },
 		{
-			module: "MMM-GoogleCast",
-			position: "middle_center",
-			config: { device: "PASTE-DEVICE-ID-HER", hide: true } // TODO: enhets-ID (se README)
+			module: "MMM-Kolumbus",
+			position: "top_left",
+			header: "Busser fra Rosenli",
+			config: { stopPlaceId: "NSR:StopPlace:25861", modes: ["bus"], maxDepartures: 6 }
 		},
+		{
+			module: "MMM-Kolumbus",
+			position: "top_left",
+			header: "Tog fra Stavanger",
+			config: { stopPlaceId: "NSR:StopPlace:61291", modes: ["rail"], maxDepartures: 5, showPlatform: true }
+		},
+		{ module: "MMM-GoogleCast", position: "middle_center", disabled: !CAST_DEVICE, config: { device: CAST_DEVICE, hide: true } },
 
 		// ---------- Side 1: fotball ----------
 		{

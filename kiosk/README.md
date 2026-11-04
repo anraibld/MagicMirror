@@ -13,4 +13,4 @@
 `git clone` repoet til `~/MagicMirror`, legg Node 24 (arm64) i `~/.local/node`, kjør `bash kiosk/install.sh`, rediger `config/config.js` (lages fra `config.template.js`), logg ut/inn.
 
 ## Filer
-`bin/` skript · `systemd/` units · `modules/` egne moduler (MMM-Kolumbus) · `modules.list` tredjepartsmoduler · `config.template.js` uten hemmeligheter (ekte `config.js` er gitignorert).
+`bin/` skript · `systemd/` units · `modules/` egne moduler (MMM-Kolumbus) · `modules.list` tredjepartsmoduler · `custom.css` auto-skalering (kopieres til config/ ved install) · `config.template.js` uten hemmeligheter (ekte `config.js` er gitignorert).

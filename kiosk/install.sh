@@ -8,6 +8,7 @@ ln -sfn ../magicmirror.service "$H/.config/systemd/user/default.target.wants/mag
 ln -sfn ../mm-update.timer "$H/.config/systemd/user/timers.target.wants/mm-update.timer"
 for m in "$SRC"/modules/*/; do mkdir -p "$H/MagicMirror/modules/$(basename "$m")"; cp -a "$m". "$H/MagicMirror/modules/$(basename "$m")/"; done
 [ -f "$H/MagicMirror/config/config.js" ] || cp "$SRC/config.template.js" "$H/MagicMirror/config/config.js"
+cp "$SRC/custom.css" "$H/MagicMirror/config/custom.css"
 # labwc: autostart + Super+M
 A="$H/.config/labwc/autostart"
 [ -f "$A" ] || cp "$ROOT/etc/xdg/labwc/autostart" "$A"

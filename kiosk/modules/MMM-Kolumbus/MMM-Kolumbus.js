@@ -4,6 +4,8 @@ Module.register("MMM-Kolumbus", {
 		maxDepartures: 8,
 		updateInterval: 60 * 1000,
 		lineFilter: [],
+		modes: [], // f.eks. ["rail"] eller ["bus"]; tom = alle
+		showPlatform: false, // vis spor/plattform (nyttig for tog)
 		header: ""
 	},
 
@@ -24,7 +26,8 @@ Module.register("MMM-Kolumbus", {
 			identifier: this.identifier,
 			stopPlaceId: this.config.stopPlaceId,
 			maxDepartures: this.config.maxDepartures,
-			lineFilter: this.config.lineFilter
+			lineFilter: this.config.lineFilter,
+			modes: this.config.modes
 		});
 	},
 
@@ -35,7 +38,7 @@ Module.register("MMM-Kolumbus", {
 	},
 
 	getHeader() {
-		return this.config.header || (this.data_ && this.data_.name) || "Kolumbus";
+		return (this.data && this.data.header) || this.config.header || (this.data_ && this.data_.name) || "Kolumbus";
 	},
 
 	rel(dep) {
@@ -65,6 +68,7 @@ Module.register("MMM-Kolumbus", {
 			r.insertCell().className = "kol-line";
 			r.cells[0].textContent = d.line;
 			r.insertCell().textContent = d.destination;
+			if (this.config.showPlatform) { const q = r.insertCell(); q.className = "kol-quay dim"; q.textContent = d.quay ? "spor " + d.quay : ""; }
 			const c = r.insertCell();
 			c.className = "kol-time" + (d.realtime ? " kol-rt" : "");
 			c.textContent = this.rel(d);

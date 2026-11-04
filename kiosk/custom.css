@@ -1,0 +1,33 @@
+/* Auto-skalering: all tekst er rem-basert, så vi skalerer rot-fontstørrelsen etter skjermen
+   (≈20px på 1920×1080, ≈22px på 1080×1920 stående, ≈39px på 4K). Gir seg selv på alle oppløsninger. */
+:root {
+  --font-size: clamp(13px, calc(0.55vw + 0.85vh), 44px);
+  --gap-body-top: calc(var(--font-size) * 2.5);
+  --gap-body-right: calc(var(--font-size) * 3);
+  --gap-body-bottom: calc(var(--font-size) * 2.5);
+  --gap-body-left: calc(var(--font-size) * 3);
+  --gap-modules: calc(var(--font-size) * 1.5);
+  --color-text: #bdbdbd;
+  --color-text-dimmed: #707070;
+  --color-text-bright: #fff;
+}
+
+/* modulhoder: tydeligere, mer ensartet */
+.module-header {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--color-text-dimmed);
+  border-bottom-color: #333;
+  padding-bottom: 0.3em;
+  margin-bottom: 0.6em;
+}
+
+/* WiFi-QR skalerer med skjermen (config-verdien er faste piksler) */
+.MMM-WiFiPassword img { width: calc(var(--font-size) * 6) !important; height: auto !important; }
+.MMM-WiFiPassword .text { font-size: 0.7rem; }
+
+/* sideindikator */
+.MMM-page-indicator .indicator { transform: scale(1.2); }
+
+/* tabeller (buss/tog) skal ikke sprenge kolonnen */
+.kolumbus { min-width: calc(var(--font-size) * 17); }
