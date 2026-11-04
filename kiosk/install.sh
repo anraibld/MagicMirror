@@ -5,6 +5,7 @@ mkdir -p "$H/.local/bin" "$H/.config/systemd/user/default.target.wants" "$H/.con
 install -m755 "$SRC"/bin/* "$H/.local/bin/"
 install -m644 "$SRC"/systemd/* "$H/.config/systemd/user/"
 ln -sfn ../magicmirror.service "$H/.config/systemd/user/default.target.wants/magicmirror.service"
+ln -sfn ../mm-sensehat.service "$H/.config/systemd/user/default.target.wants/mm-sensehat.service"
 ln -sfn ../mm-update.timer "$H/.config/systemd/user/timers.target.wants/mm-update.timer"
 for m in "$SRC"/modules/*/; do mkdir -p "$H/MagicMirror/modules/$(basename "$m")"; cp -a "$m". "$H/MagicMirror/modules/$(basename "$m")/"; done
 [ -f "$H/MagicMirror/config/config.js" ] || cp "$SRC/config.template.js" "$H/MagicMirror/config/config.js"

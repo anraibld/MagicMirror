@@ -1,0 +1,10 @@
+[Unit]
+Description=MagicMirror Sense HAT debug (joystick-trykk = status-LED)
+
+[Service]
+ExecStart=%h/.local/bin/mm-sensehat
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

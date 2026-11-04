@@ -1,0 +1,388 @@
+#!/usr/bin/env python3
+"""Sense HAT debug-modus for MagicMirror (kun stdlib; sense_hat-biblioteket brukes bare som reserve for sensorer).
+
+Joystick (5 knapper):
+  trykk (midten)  debug-modus av/på (LED-matrisen er helt slukket ellers, og slukkes selv etter 10 min)
+  venstre/høyre   bytt debug-side
+  opp/ned         lysstyrke
+Hver side har 8 rader (øverst → nederst). Første piksel i raden er en fast etikettfarge, de 7 neste er status/stolpe.
+
+Side 0 – STATUS (grønn = OK, gul = advarsel/midlertidig, rød = feil)
+  0 blå Server · 1 cyan Kiosk (gul = skrivebord) · 2 hvit Ethernet (gul = ikke koblet) · 3 magenta WiFi
+  4 gul Internett (TCP+DNS) · 5 oransje Data (Entur + YR; gul = bare én) · 6 lilla Oppdatering · 7 grå Modulfeil siste 10 min
+Side 1 – PI-VITALER (stolpe 0-7, grønn/gul/rød)
+  0 CPU-temp (30-85 °C) · 1 CPU-last · 2 RAM brukt · 3 disk brukt · 4 strøm (rød hel stolpe = undervolt/throttling)
+  5 WiFi-signal (sterkere = lengre) · 6 oppetid (maks 7 dager) · 7 siste oppdatering (nyere = lengre)
+Side 2 – SENSE HAT-SENSORER (blå stolper)
+  0 temperatur (10-40 °C) · 1 fuktighet · 2 trykk (950-1050 hPa) · 3 helning X · 4 helning Y · 5 helning Z · 6 kompass · 7 bevegelse
+  (grå prikker = sensoren svarte ikke)
+
+Bruk: mm-sensehat            (daemon)
+      mm-sensehat --selftest (skriver alle sidene som tekst, uten maskinvare)
+"""
+import glob, json, math, os, select, shutil, socket, struct, subprocess, sys, time, urllib.request
+from concurrent.futures import ThreadPoolExecutor
+
+HOME = os.path.expanduser("~")
+OK, WARN, BAD, OFF = (0, 200, 0), (220, 160, 0), (220, 0, 0), (0, 0, 0)
+LABEL = [(0, 80, 255), (0, 200, 200), (255, 255, 255), (220, 0, 220), (255, 255, 0), (255, 110, 0), (140, 60, 255), (110, 110, 110)]
+TIMEOUT = 10 * 60
+
+
+def http(url, data=None, headers=None, t=4):
+    req = urllib.request.Request(url, data=data, headers=headers or {})
+    with urllib.request.urlopen(req, timeout=t) as r:
+        return r.status
+
+
+def run(cmd, t=4):
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=t)
+
+
+def c_server():
+    active = run(["systemctl", "--user", "is-active", "magicmirror"]).stdout.strip() == "active"
+    try:
+        return OK if http("http://localhost:8080") == 200 else WARN
+    except Exception:
+        return WARN if active else BAD
+
+
+def c_kiosk():
+    p = run(["pgrep", "-u", str(os.getuid()), "-f", "--", f"--user-data-dir={HOME}/.cache/mm-kiosk"])
+    return OK if p.returncode == 0 else WARN
+
+
+def iface_state(prefixes):
+    found = False
+    for path in glob.glob("/sys/class/net/*"):
+        n = os.path.basename(path)
+        if n.startswith(prefixes):
+            found = True
+            try:
+                if open(path + "/operstate").read().strip() == "up":
+                    return OK
+            except OSError:
+                pass
+    return WARN if found else BAD
+
+
+def c_eth():
+    return iface_state(("eth", "end", "enp", "eno"))
+
+
+def c_wifi():
+    return iface_state(("wlan", "wlp"))
+
+
+def c_net():
+    try:
+        socket.create_connection(("1.1.1.1", 443), 3).close()
+    except OSError:
+        return BAD
+    try:
+        socket.gethostbyname("github.com")
+    except OSError:
+        return WARN
+    return OK
+
+
+def c_data():
+    ok = 0
+    try:
+        q = json.dumps({"query": "{__typename}"}).encode()
+        ok += http("https://api.entur.io/journey-planner/v3/graphql", q, {"Content-Type": "application/json", "ET-Client-Name": "anraibld-magicmirror"}) == 200
+    except Exception:
+        pass
+    try:
+        ok += http("https://api.met.no/weatherapi/locationforecast/2.0/status", headers={"User-Agent": "MagicMirror"}) == 200
+    except Exception:
+        pass
+    return {2: OK, 1: WARN}.get(ok, BAD)
+
+
+def c_update():
+    try:
+        last = open(f"{HOME}/.cache/mm/update.log").read().strip().splitlines()[-1].lower()
+    except (OSError, IndexError):
+        return WARN
+    if any(w in last for w in ("rulles", "feilet", "kan ikke", "kom ikke opp")):
+        return BAD
+    if "offline" in last:
+        return WARN
+    return OK
+
+
+def c_errors():
+    try:
+        out = run(["journalctl", "--user", "-u", "magicmirror", "--since", "-10min", "-g", "ERROR", "-q", "--no-pager"], 6).stdout
+    except Exception:
+        return WARN
+    n = len([l for l in out.splitlines() if l.strip()])
+    return OK if n == 0 else WARN if n < 5 else BAD
+
+
+CHECKS = [c_server, c_kiosk, c_eth, c_wifi, c_net, c_data, c_update, c_errors]
+NAMES = ["Server", "Kiosk", "Ethernet", "WiFi", "Internett", "Data", "Oppdatering", "Modulfeil"]
+
+
+def run_checks():
+    with ThreadPoolExecutor(len(CHECKS)) as ex:
+        futs = [ex.submit(c) for c in CHECKS]
+        out = []
+        for f in futs:
+            try:
+                out.append(f.result(timeout=15))
+            except Exception:
+                out.append(WARN)
+    return out
+
+
+def frame(statuses):
+    px = []
+    for row in range(8):
+        px.append(LABEL[row])
+        px.extend([statuses[row]] * 7)
+    return px
+
+
+# ---------- side 1: Pi-vitaler ----------
+def rd(path, default=None):
+    try:
+        return open(path).read().strip()
+    except OSError:
+        return default
+
+
+def lvl_color(f, lo=0.6, hi=0.85):
+    return OK if f < lo else WARN if f < hi else BAD
+
+
+def clamp(x):
+    return max(0.0, min(1.0, x))
+
+
+def vitals():
+    """-> liste av (navn, tekstverdi, brøk 0-1 eller None, fargefunksjon-brøk)"""
+    out = []
+    t = rd("/sys/class/thermal/thermal_zone0/temp")
+    ft = clamp((int(t) / 1000 - 30) / 55) if t else None
+    out.append(("CPU-temp", f"{int(t)/1000:.0f} C" if t else "?", ft, ft))
+    fl = clamp(os.getloadavg()[0] / (os.cpu_count() or 1))
+    out.append(("CPU-last", f"{os.getloadavg()[0]:.2f}", fl, fl))
+    mem = {l.split(":")[0]: int(l.split()[1]) for l in (rd("/proc/meminfo", "") or "").splitlines() if l.strip()}
+    fm = 1 - mem["MemAvailable"] / mem["MemTotal"] if "MemAvailable" in mem else None
+    out.append(("RAM", f"{fm*100:.0f} %" if fm is not None else "?", fm, fm))
+    du = shutil.disk_usage("/")
+    fd = du.used / du.total
+    out.append(("Disk", f"{fd*100:.0f} %", fd, fd))
+    try:
+        thr = int(run(["vcgencmd", "get_throttled"]).stdout.strip().split("=")[1], 16)
+        bad = bool(thr & 0x50005)
+        out.append(("Strom", "undervolt/throttle" if bad else "OK" if not thr else f"hist 0x{thr:x}", 1.0, 1.0 if bad else (0.7 if thr else 0.0)))
+    except Exception:
+        out.append(("Strom", "?", None, None))
+    sig = None
+    for l in (rd("/proc/net/wireless", "") or "").splitlines()[2:]:
+        try:
+            sig = float(l.split()[3].rstrip("."))
+        except (ValueError, IndexError):
+            pass
+    fs = clamp((sig + 90) / 60) if sig is not None else None
+    out.append(("WiFi-signal", f"{sig:.0f} dBm" if sig is not None else "?", fs, None if fs is None else 1 - fs))
+    up = rd("/proc/uptime")
+    fu = clamp(float(up.split()[0]) / (7 * 86400)) if up else None
+    out.append(("Oppetid", f"{float(up.split()[0])/3600:.1f} t" if up else "?", fu, 0.0 if fu is not None else None))
+    try:
+        age = time.time() - os.path.getmtime(f"{HOME}/.cache/mm/update.log")
+        fa = clamp(1 - age / (12 * 3600))  # nyere = lengre stolpe
+        out.append(("Oppdatert", f"{age/3600:.1f} t siden", fa, 0.0 if age < 8 * 3600 else 0.7 if age < 24 * 3600 else 1.0))
+    except OSError:
+        out.append(("Oppdatert", "aldri", None, None))
+    return out
+
+
+# ---------- side 2: Sense HAT-sensorer ----------
+_sh = [None, False]
+
+
+def iio(name_part, attr, scale=1.0):
+    for d in glob.glob("/sys/bus/iio/devices/iio:device*"):
+        if name_part in (rd(d + "/name", "") or ""):
+            v = rd(f"{d}/{attr}")
+            if v is not None:
+                return float(v) * scale
+    return None
+
+
+def sh_lib():
+    if not _sh[1]:
+        _sh[1] = True
+        try:
+            from sense_hat import SenseHat
+            _sh[0] = SenseHat()
+        except Exception:
+            _sh[0] = None
+    return _sh[0]
+
+
+def sensors():
+    temp = iio("hts221", "in_temp_input", 1 / 1000)
+    hum = iio("hts221", "in_humidityrelative_input", 1 / 1000)
+    pres = iio("lps", "in_pressure_input", 10)  # kPa -> hPa
+    ax = ay = az = None
+    for d in glob.glob("/sys/bus/iio/devices/iio:device*"):
+        if "accel" in (rd(d + "/name", "") or "") and rd(d + "/in_accel_x_raw") is not None:
+            sc = float(rd(d + "/in_accel_scale", "1") or 1)
+            ax, ay, az = (float(rd(f"{d}/in_accel_{a}_raw")) * sc / 9.81 for a in "xyz")
+    head = None
+    lib = None
+    if None in (temp, hum, pres, ax):
+        lib = sh_lib()
+    if lib:
+        try:
+            temp = temp if temp is not None else lib.get_temperature()
+            hum = hum if hum is not None else lib.get_humidity()
+            pres = pres if pres is not None else lib.get_pressure()
+            if ax is None:
+                a = lib.get_accelerometer_raw()
+                ax, ay, az = a["x"], a["y"], a["z"]
+            head = lib.get_compass()
+        except Exception:
+            pass
+    mov = None if ax is None else abs(math.sqrt(ax * ax + ay * ay + az * az) - 1)
+    f = lambda v, lo, hi: None if v is None else clamp((v - lo) / (hi - lo))
+    return [
+        ("Temp", f"{temp:.1f} C" if temp is not None else "?", f(temp, 10, 40)),
+        ("Fukt", f"{hum:.0f} %" if hum is not None else "?", f(hum, 0, 100)),
+        ("Trykk", f"{pres:.0f} hPa" if pres is not None else "?", f(pres, 950, 1050)),
+        ("Helning X", f"{ax:.2f} g" if ax is not None else "?", f(ax, -1, 1)),
+        ("Helning Y", f"{ay:.2f} g" if ay is not None else "?", f(ay, -1, 1)),
+        ("Helning Z", f"{az:.2f} g" if az is not None else "?", f(az, -1, 1)),
+        ("Kompass", f"{head:.0f} grader" if head is not None else "?", f(head, 0, 360)),
+        ("Bevegelse", f"{mov:.2f} g" if mov is not None else "?", f(mov, 0, 0.5)),
+    ]
+
+
+NOBAR = (30, 30, 30)
+BLUE = (0, 120, 255)
+
+
+def bar(label, frac, color):
+    row = [label]
+    if frac is None:
+        return row + [NOBAR] * 7
+    n = max(1, round(frac * 7)) if frac > 0 else 0
+    return row + [color] * n + [(18, 18, 18)] * (7 - n)
+
+
+def page_pixels(page, statuses=None):
+    if page == 0:
+        return frame(statuses or run_checks())
+    px = []
+    if page == 1:
+        for i, (_, _, f, cf) in enumerate(vitals()):
+            px += bar(LABEL[i], f, lvl_color(cf) if cf is not None else NOBAR)
+    else:
+        for i, (_, _, f) in enumerate(sensors()):
+            px += bar(LABEL[i], f, BLUE)
+    return px
+
+
+PAGES = ["Status", "Pi-vitaler", "Sense HAT"]
+
+
+def scale(px, b):
+    return [(int(r * b), int(g * b), int(bl * b)) for r, g, bl in px]
+
+
+def rgb565(c):
+    r, g, b = c
+    return struct.pack("<H", ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3))
+
+
+def find(sysglob, name):
+    for p in glob.glob(sysglob):
+        try:
+            if name in open(p).read():
+                return p
+        except OSError:
+            pass
+
+
+def devices():
+    fb = find("/sys/class/graphics/fb*/name", "RPi-Sense FB")
+    ev = find("/sys/class/input/event*/device/name", "Sense HAT Joystick")
+    if not fb or not ev:
+        return None, None
+    return "/dev/" + fb.split("/")[4], "/dev/input/" + ev.split("/")[4]
+
+
+def draw(fbdev, px, b=1.0):
+    with open(fbdev, "wb") as f:
+        f.write(b"".join(rgb565(c) for c in scale(px, b)))
+
+
+KEY_ENTER, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT = 28, 103, 108, 105, 106
+BRIGHT = [0.1, 0.25, 0.5, 1.0]
+
+
+def main():
+    if "--selftest" in sys.argv:
+        sym = {OK: "OK  ", WARN: "WARN", BAD: "FEIL"}
+        print("== Side 0: Status")
+        for n, s in zip(NAMES, run_checks()):
+            print(f"  {n:12} {sym[s]}")
+        print("== Side 1: Pi-vitaler")
+        for n, v, f, _ in vitals():
+            print(f"  {n:12} {v:20} {'-' if f is None else round(f, 2)}")
+        print("== Side 2: Sense HAT")
+        for n, v, f in sensors():
+            print(f"  {n:12} {v:20} {'-' if f is None else round(f, 2)}")
+        return
+    fbdev = evdev = None
+    while not fbdev:
+        fbdev, evdev = devices()
+        if not fbdev:
+            time.sleep(15)
+    print("Sense HAT:", fbdev, evdev, flush=True)
+    draw(fbdev, [OFF] * 64)
+    fd = os.open(evdev, os.O_RDONLY | os.O_NONBLOCK)
+    size = struct.calcsize("llHHi")
+    debug, page, bi, started, last = False, 0, 2, 0, 0
+    while True:
+        r, _, _ = select.select([fd], [], [], 0.5)
+        redraw = False
+        if r:
+            try:
+                data = os.read(fd, size * 32)
+            except BlockingIOError:
+                data = b""
+            for i in range(0, len(data) - size + 1, size):
+                _, _, typ, code, val = struct.unpack("llHHi", data[i:i + size])
+                if typ != 1 or val != 1:
+                    continue
+                if code == KEY_ENTER:
+                    debug = not debug
+                    page = 0
+                    started = time.time()
+                    if not debug:
+                        draw(fbdev, [OFF] * 64)
+                    redraw = debug
+                elif debug:
+                    started = time.time()
+                    if code == KEY_RIGHT: page = (page + 1) % len(PAGES)
+                    elif code == KEY_LEFT: page = (page - 1) % len(PAGES)
+                    elif code == KEY_UP: bi = min(bi + 1, len(BRIGHT) - 1)
+                    elif code == KEY_DOWN: bi = max(bi - 1, 0)
+                    redraw = True
+        if debug:
+            if time.time() - started > TIMEOUT:
+                debug = False
+                draw(fbdev, [OFF] * 64)
+            elif redraw or time.time() - last > 3:
+                draw(fbdev, page_pixels(page), BRIGHT[bi])
+                last = time.time()
+
+
+if __name__ == "__main__":
+    main()

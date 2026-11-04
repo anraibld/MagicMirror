@@ -22,12 +22,9 @@
   margin-bottom: 0.6em;
 }
 
-/* Gjeste-WiFi (skjult side – vises kun på forespørsel, så innbrenning er ikke et problem) */
-.MMM-WiFiPassword, #WiFiPassword { text-align: center !important; line-height: 1.7 !important; }
-.MMM-WiFiPassword img { display: inline-block !important; margin: 0 auto 1rem; border-radius: 1rem; }
-.MMM-WiFiPassword .text { font-size: 1.1rem; }
-.MMM-WiFiPassword .module-header { text-align: center; }
-.region.middle.center .MMM-WiFiPassword { margin: 0 auto; }
+/* Gjeste-WiFi: kun på hjemmesiden; dempet så QR-koden ikke brenner inn / blender */
+.MMM-WiFiPassword img { filter: brightness(0.6); border-radius: 0.5rem; }
+.MMM-WiFiPassword .text { font-size: 0.8rem; line-height: 1.5; }
 /* Remote-Control virker uten å vise URL-linjen permanent */
 .MMM-Remote-Control { display: none; }
 

@@ -56,10 +56,9 @@ let config = {
 		{
 			module: "MMM-pages",
 			config: {
-				timings: { default: 20000, wifi: 45000 }, // «wifi» er en skjult side: vises kun på forespørsel
-				hiddenPages: { wifi: ["clock", "MMM-WiFiPassword"] },
+				timings: { default: 20000 },
 				modules: [
-					["MMM-Kolumbus", "MMM-GoogleCast"], // side 0 (begge Kolumbus-instansene)
+					["MMM-Kolumbus", "MMM-GoogleCast", "MMM-WiFiPassword"], // side 0 = hjemmesiden (buss, tog, WiFi)
 					["MMM-MyScoreboard", "MMM-MyStandings"], // side 1
 					["newsfeed", "MMM-Farevarsel"] // side 2
 				],
@@ -77,8 +76,8 @@ let config = {
 		},
 		{
 			module: "MMM-WiFiPassword",
-			position: "middle_center",
-			config: { network: "BYTT-MEG", password: "BYTT-MEG", authType: "WPA", header: "Gjesten-WiFi", qrSize: 260, layoutVertical: true, colorDark: "#000000", colorLight: "#ffffff" }
+			position: "bottom_left",
+			config: { network: "BYTT-MEG", password: "BYTT-MEG", authType: "WPA", header: "Gjesten-WiFi", qrSize: 110, layoutVertical: false, colorDark: "#000000", colorLight: "#ffffff" }
 		},
 		{ module: "MMM-page-indicator", position: "bottom_bar", config: { pages: 3, activeBright: true } },
 
