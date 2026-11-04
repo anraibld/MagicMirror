@@ -3,10 +3,12 @@
 export PATH="$HOME/.local/node/bin:$PATH" ELECTRON_SKIP_BINARY_DOWNLOAD=1
 MM="$HOME/MagicMirror"; ST="$HOME/.cache/mm"; mkdir -p "$ST"
 cd "$MM" || exit 0
+online() { curl -sf -m 5 -o /dev/null https://registry.npmjs.org/; }
 npm_if_changed() { # dir stampname
   local dir=$1 name=$2 h
   h=$(cat "$dir/package.json" "$dir/package-lock.json" 2>/dev/null | sha256sum | cut -c1-24)-$(node -v)
   if [ ! -d "$dir/node_modules" ] || [ "$(cat "$ST/deps-$name" 2>/dev/null)" != "$h" ]; then
+    online || { echo "offline – hopper over npm install: $name"; return 0; }
     echo "npm install: $name"
     (cd "$dir" && timeout 900 npm install --omit=dev --no-audit --no-fund) && echo "$h" > "$ST/deps-$name"
   fi

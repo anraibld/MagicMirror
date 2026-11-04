@@ -347,9 +347,13 @@ def main():
             print(f"  {n:12} {v:20} {'-' if f is None else round(f, 2)}")
         return
     fbdev = evdev = None
+    warned = False
     while not fbdev:
         fbdev, evdev = devices()
         if not fbdev:
+            if not warned:
+                print("Fant ikke Sense HAT (RPi-Sense FB / joystick) – er overlay rpi-sense lastet? ls /dev/fb*", flush=True)
+                warned = True
             time.sleep(15)
     print("Sense HAT:", fbdev, evdev, flush=True)
     draw(fbdev, [OFF] * 64)
