@@ -5,6 +5,7 @@ Joystick (5 knapper):
   trykk (midten)  debug-modus av/på (LED-matrisen er helt slukket ellers, og slukkes selv etter 10 min)
   venstre/høyre   bytt debug-side
   opp/ned         lysstyrke
+  ↑ ↑ ↓ ↓ ← → ← → + trykk (A)   regnbue-modus i 5 sekunder (virker alltid, innen 8 s)
 Hver side har 8 rader (øverst → nederst). Første piksel i raden er en fast etikettfarge, de 7 neste er status/stolpe.
 
 Side 0 – STATUS (grønn = OK, gul = advarsel/midlertidig, rød = feil)
@@ -20,7 +21,7 @@ Side 2 – SENSE HAT-SENSORER (blå stolper)
 Bruk: mm-sensehat            (daemon)
       mm-sensehat --selftest (skriver alle sidene som tekst, uten maskinvare)
 """
-import glob, json, math, os, select, shutil, socket, struct, subprocess, sys, time, urllib.request
+import colorsys, glob, json, math, os, select, shutil, socket, struct, subprocess, sys, time, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 HOME = os.path.expanduser("~")
@@ -324,6 +325,12 @@ def draw(fbdev, px, b=1.0):
 
 KEY_ENTER, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT = 28, 103, 108, 105, 106
 BRIGHT = [0.1, 0.25, 0.5, 1.0]
+KONAMI = [KEY_UP, KEY_UP, KEY_DOWN, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_LEFT, KEY_RIGHT]  # + KEY_ENTER ("A")
+KONAMI_WINDOW, RAINBOW_SECS = 8.0, 5.0
+
+
+def rainbow_frame(t):
+    return [tuple(int(255 * v) for v in colorsys.hsv_to_rgb(((r + c) / 14 + t * 0.6) % 1.0, 1.0, 1.0)) for r in range(8) for c in range(8)]
 
 
 def main():
@@ -348,9 +355,11 @@ def main():
     draw(fbdev, [OFF] * 64)
     fd = os.open(evdev, os.O_RDONLY | os.O_NONBLOCK)
     size = struct.calcsize("llHHi")
-    debug, page, bi, started, last = False, 0, 2, 0, 0
+    debug, page, bi, started, last, rainbow_until = False, 0, 2, 0, 0, 0
+    hist = []  # (kode, tid, side_før, lysstyrke_før)
     while True:
-        r, _, _ = select.select([fd], [], [], 0.5)
+        rainbow = time.time() < rainbow_until
+        r, _, _ = select.select([fd], [], [], 0.05 if rainbow else 0.5)
         redraw = False
         if r:
             try:
@@ -361,20 +370,35 @@ def main():
                 _, _, typ, code, val = struct.unpack("llHHi", data[i:i + size])
                 if typ != 1 or val != 1:
                     continue
+                now = time.time()
+                if code == KEY_ENTER and len(hist) >= 8 and [h[0] for h in hist[-8:]] == KONAMI and now - hist[-8][1] <= KONAMI_WINDOW:
+                    page, bi = hist[-8][2], hist[-8][3]  # angre navigasjonen under sekvensen
+                    hist.clear()
+                    rainbow_until = now + RAINBOW_SECS
+                    continue
+                hist.append((code, now, page, bi))
+                del hist[:-8]
                 if code == KEY_ENTER:
                     debug = not debug
                     page = 0
-                    started = time.time()
+                    started = now
                     if not debug:
                         draw(fbdev, [OFF] * 64)
                     redraw = debug
                 elif debug:
-                    started = time.time()
+                    started = now
                     if code == KEY_RIGHT: page = (page + 1) % len(PAGES)
                     elif code == KEY_LEFT: page = (page - 1) % len(PAGES)
                     elif code == KEY_UP: bi = min(bi + 1, len(BRIGHT) - 1)
                     elif code == KEY_DOWN: bi = max(bi - 1, 0)
                     redraw = True
+        if time.time() < rainbow_until:
+            draw(fbdev, rainbow_frame(time.time()), BRIGHT[bi])
+            continue
+        if rainbow:  # regnbuen er nettopp ferdig
+            draw(fbdev, [OFF] * 64)
+            redraw = debug
+            started = time.time()
         if debug:
             if time.time() - started > TIMEOUT:
                 debug = False
