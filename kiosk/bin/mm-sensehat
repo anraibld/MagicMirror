@@ -250,6 +250,13 @@ def sensors():
             head = lib.get_compass()
         except Exception:
             pass
+    # sense_hat-biblioteket gir 0 / søppelverdier når sensorene ikke svarer -> vis som utilgjengelig
+    if temp is not None and (temp == 0 or not -20 < temp < 85):
+        temp = None
+    if hum is not None and not 0 < hum <= 100:
+        hum = None
+    if pres is not None and pres < 300:
+        pres = None
     mov = None if ax is None else abs(math.sqrt(ax * ax + ay * ay + az * az) - 1)
     f = lambda v, lo, hi: None if v is None else clamp((v - lo) / (hi - lo))
     return [
