@@ -4,11 +4,6 @@ const helpers = require("../helpers/global-setup");
 describe("Compliments module", () => {
 	let page;
 
-	/**
-	 * move similar tests in function doTest
-	 * @param {Array} complimentsArray The array of compliments.
-	 * @returns {Promise<void>}
-	 */
 	const doTest = async (complimentsArray) => {
 		await expect(page.locator(".compliments")).toBeVisible();
 		const contentLocator = page.locator(".module-content");
@@ -106,12 +101,8 @@ describe("Compliments module", () => {
 			});
 
 			it("shows 'Remote compliment file works!' as only anytime list set", async () => {
-				//await helpers.startApplication("tests/configs/modules/compliments/compliments_file.js", "01 Jan 2022 10:00:00 GMT");
 				await doTest(["Remote compliment file works!"]);
 			});
-			//			afterAll(async () =>{
-			//				await helpers.stopApplication()
-			//			});
 		});
 
 		describe("get list from remote file w update", () => {
@@ -122,14 +113,10 @@ describe("Compliments module", () => {
 			});
 
 			it("shows 'test in morning' as test time set to 10am", async () => {
-				//await helpers.startApplication("tests/configs/modules/compliments/compliments_file_change.js", "01 Jan 2022 10:00:00 GMT");
 				await doTest(["Remote compliment file works!"]);
 				await new Promise((r) => setTimeout(r, 10000));
 				await doTest(["test in morning"]);
 			});
-			//			afterAll(async () =>{
-			//				await helpers.stopApplication()
-			//			});
 		});
 	});
 

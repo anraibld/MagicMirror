@@ -5,8 +5,6 @@ const BUIENRADAR_API_BASE = "https://forecast.buienradar.nl/2.0/forecast";
 const ERROR_TRANSLATION_KEY = "MODULE_ERROR_UNSPECIFIED";
 const TIMESTAMP_HAS_TIME_ZONE = /[zZ]|[+-]\d{2}:?\d{2}$/;
 
-// Mapping from Buienradar icon code to weather-icons class names (https://erikflowers.github.io/weather-icons/).
-// Icon filenames use the Buienradar code: https://cdn.buienradar.nl/resources/images/icons/weather/30x30/a.png
 const WEATHER_ICON_MAP = {
 	a: "day-sunny",
 	aa: "night-clear",
@@ -54,11 +52,6 @@ const WEATHER_ICON_MAP = {
 	ww: "rain-mix"
 };
 
-/**
- * Server-side weather provider for Buienradar
- * Netherlands/Belgium only, metric system, no API key required
- * see https://buienradar.nl
- */
 class BuienradarProvider extends WeatherProvider {
 	constructor (config) {
 		super();
@@ -81,7 +74,6 @@ class BuienradarProvider extends WeatherProvider {
 
 		this.#initializeFetcher();
 	}
-
 
 	#initializeFetcher () {
 		this._createJSONFetcher({

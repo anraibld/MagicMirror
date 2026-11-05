@@ -1,9 +1,3 @@
-/**
- * Environment Canada Weather Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- * Environment Canada is the Canadian weather service (XML-based).
- */
 
 import fs from "fs";
 import path from "path";
@@ -16,9 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const indexHTML = fs.readFileSync(path.join(__dirname, "../../../../../mocks/weather_envcanada_index.html"), "utf-8");
 const cityPageXML = fs.readFileSync(path.join(__dirname, "../../../../../mocks/weather_envcanada.xml"), "utf-8");
 
-// Match directory listing (index) - must end with / and nothing after
 const ENVCANADA_INDEX_PATTERN = /https:\/\/dd\.weather\.gc\.ca\/today\/citypage_weather\/[A-Z]{2}\/\d{2}\/$/;
-// Match actual XML files
 const ENVCANADA_CITYPAGE_PATTERN = /https:\/\/dd\.weather\.gc\.ca\/today\/citypage_weather\/[A-Z]{2}\/\d{2}\/.*\.xml$/;
 
 let server;
@@ -120,8 +112,8 @@ describe("EnvCanadaProvider", () => {
 
 			expect(result).toBeDefined();
 			expect(result.temperature).toBe(-20.3);
-			expect(result.windSpeed).toBeCloseTo(5.28, 1); // 19 km/h -> m/s
-			expect(result.windFromDirection).toBe(346); // NNW
+			expect(result.windSpeed).toBeCloseTo(5.28, 1);
+			expect(result.windFromDirection).toBe(346);
 			expect(result.humidity).toBe(67);
 		});
 
@@ -141,7 +133,6 @@ describe("EnvCanadaProvider", () => {
 
 			const result = await dataPromise;
 
-			// XML has windChill of -31
 			expect(result.feelsLikeTemp).toBe(-31);
 		});
 
@@ -181,7 +172,6 @@ describe("EnvCanadaProvider", () => {
 
 			const result = await dataPromise;
 
-			// Icon code 40 = "Blowing Snow" → "snow-wind"
 			expect(result.weatherType).toBe("snow-wind");
 		});
 	});
@@ -230,7 +220,6 @@ describe("EnvCanadaProvider", () => {
 
 			const result = await dataPromise;
 
-			// Real data has 40% for both day and night periods
 			expect(result[0].precipitationProbability).toBe(40);
 		});
 	});
@@ -253,7 +242,7 @@ describe("EnvCanadaProvider", () => {
 			const result = await dataPromise;
 
 			expect(Array.isArray(result)).toBe(true);
-			expect(result).toHaveLength(24); // Real data has 24 hourly forecasts
+			expect(result).toHaveLength(24);
 			const hour = result[0];
 			expect(hour).toHaveProperty("date");
 			expect(hour).toHaveProperty("temperature");
@@ -277,7 +266,6 @@ describe("EnvCanadaProvider", () => {
 
 			const result = await dataPromise;
 
-			// First hourly forecast is for 202602071300 = 2026-02-07 13:00 UTC
 			const expectedDate = new Date(Date.UTC(2026, 1, 7, 13, 0, 0));
 			expect(result[0].date.getTime()).toBe(expectedDate.getTime());
 		});
@@ -286,7 +274,7 @@ describe("EnvCanadaProvider", () => {
 	describe("Error Handling", () => {
 		it("should handle missing city page URL", async () => {
 			const provider = new EnvCanadaProvider({
-				siteCode: "s9999999", // Invalid site code
+				siteCode: "s9999999",
 				provCode: "ON",
 				type: "current"
 			});
@@ -299,8 +287,6 @@ describe("EnvCanadaProvider", () => {
 			await provider.initialize();
 			provider.start();
 
-			// Should not call error callback if URL not found (it's expected during hour transitions)
-			// Wait a bit to see if callback is called
 			await new Promise((resolve) => setTimeout(resolve, 100));
 
 			expect(errorCalled).toBe(false);

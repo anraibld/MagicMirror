@@ -21,7 +21,6 @@ module.exports = NodeHelper.create({
 		if (this.config.useModulesFromConfig) {
 			return modules;
 		} else {
-			// get modules from modules-directory
 			const moduleDir = path.normalize(`${global.root_path}/modules`);
 			const getDirectories = (source) => {
 				return fs.readdirSync(source, { withFileTypes: true })
@@ -49,16 +48,14 @@ module.exports = NodeHelper.create({
 			case "CONFIG": {
 				const serverConfig = this.getServerModuleConfig();
 				this.config = {
-					...payload, // Client config including defaults
-					...serverConfig, // Server config overrides client values
-					// Never accept update commands from the client.
+					...payload,
+					...serverConfig,
 					updates: serverConfig.updates ?? []
 				};
 				this.updateHelper = new UpdateHelper(this.config);
 				break;
 			}
 			case "MODULES":
-				// if this is the 1st time thru the update check process
 				if (!this.updateProcessStarted) {
 					this.updateProcessStarted = true;
 					await this.configureModules(payload);
@@ -66,7 +63,6 @@ module.exports = NodeHelper.create({
 				}
 				break;
 			case "SCAN_UPDATES":
-				// 1st time of check allows to force new scan
 				if (this.updateProcessStarted) {
 					clearTimeout(this.updateTimer);
 					await this.performFetch();
@@ -112,17 +108,14 @@ module.exports = NodeHelper.create({
 	},
 
 	ignoreUpdateChecking (moduleName) {
-		// Should not check for updates for default modules
 		if (defaultModules.includes(moduleName)) {
 			return true;
 		}
 
-		// Should not check for updates for ignored modules
 		if (this.config.ignoreModules.includes(moduleName)) {
 			return true;
 		}
 
-		// The rest of the modules that passes should check for updates
 		return false;
 	}
 });

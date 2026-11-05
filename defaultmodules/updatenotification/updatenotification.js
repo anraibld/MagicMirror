@@ -1,13 +1,13 @@
 Module.register("updatenotification", {
 	defaults: {
-		updateInterval: 10 * 60 * 1000, // every 10 minutes
-		refreshInterval: 24 * 60 * 60 * 1000, // one day
+		updateInterval: 10 * 60 * 1000,
+		refreshInterval: 24 * 60 * 60 * 1000,
 		ignoreModules: [],
 		sendUpdatesNotifications: false,
 		updates: [],
-		updateTimeout: 2 * 60 * 1000, // max update duration
-		updateAutorestart: false, // autoRestart MM when update done ?
-		useModulesFromConfig: true // if `false` iterate over modules directory
+		updateTimeout: 2 * 60 * 1000,
+		updateAutorestart: false,
+		useModulesFromConfig: true
 	},
 
 	suspended: false,
@@ -73,16 +73,12 @@ Module.register("updatenotification", {
 
 	updateUI (payload) {
 		if (payload && payload.behind > 0) {
-			// if we haven't seen info for this module
 			if (this.moduleList[payload.module] === undefined) {
-				// save it
 				this.moduleList[payload.module] = payload;
 				this.updateDom(2);
 			}
 		} else if (payload && payload.behind === 0) {
-			// if the module WAS in the list, but shouldn't be
 			if (this.moduleList[payload.module] !== undefined) {
-				// remove it
 				delete this.moduleList[payload.module];
 				this.updateDom(2);
 			}

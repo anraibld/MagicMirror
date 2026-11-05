@@ -1,16 +1,10 @@
 import "../defaultmodules/defaultmodules.js";
 import "./vendor.js";
 
-/* Module state */
-
 const loadedModuleFiles = [];
 const loadedFiles = [];
 const moduleObjects = [];
 
-/**
- * Get environment variables from config.
- * @returns {object} Env vars with modulesDir and customCss paths from config.
- */
 const getEnvVarsFromConfig = () => {
 	return {
 		modulesDir: globalThis.config.foreignModulesDir || "modules",
@@ -19,30 +13,20 @@ const getEnvVarsFromConfig = () => {
 	};
 };
 
-/**
- * Retrieve object of env variables.
- * @returns {object} with key: values as assembled in js/server_functions.js
- */
 const getEnvVars = async () => {
-	// In test mode, skip server fetch and use config values directly
 	if (typeof process !== "undefined" && process.env && process.env.mmTestMode === "true") {
 		return getEnvVarsFromConfig();
 	}
 
-	// In production, fetch env vars from server
 	try {
 		const res = await fetch(new URL("env", `${location.origin}${globalThis.config.basePath}`));
 		return JSON.parse(await res.text());
 	} catch (error) {
-		// Fallback to config values if server fetch fails
 		Log.error("Unable to retrieve env configuration", error);
 		return getEnvVarsFromConfig();
 	}
 };
 
-/**
- * Loops through all modules and requests start for every module.
- */
 const startModules = async () => {
 	const modulePromises = [];
 	for (const module of moduleObjects) {
@@ -56,17 +40,14 @@ const startModules = async () => {
 
 	const results = await Promise.allSettled(modulePromises);
 
-	// Log errors that happened during async node_helper startup
 	results.forEach((result) => {
 		if (result.status === "rejected") {
 			Log.error(result.reason);
 		}
 	});
 
-	// Notify core of loaded modules.
 	MM.modulesStarted(moduleObjects);
 
-	// Starting modules also hides any modules that have requested to be initially hidden
 	for (const thisModule of moduleObjects) {
 		if (thisModule.data.hiddenOnStartup) {
 			Log.info(`Initially hiding ${thisModule.name}`);
@@ -75,19 +56,11 @@ const startModules = async () => {
 	}
 };
 
-/**
- * Retrieve list of all modules.
- * @returns {object[]} module data as configured in config
- */
 const getAllModules = () => {
 	const AllModules = globalThis.config.modules.filter((module) => (module.module !== undefined) && (MM.getAvailableModulePositions.indexOf(module.position) > -1 || typeof (module.position) === "undefined"));
 	return AllModules;
 };
 
-/**
- * Generate array with module information including module paths.
- * @returns {object[]} Module information.
- */
 const getModuleData = async () => {
 	const modules = getAllModules();
 	const moduleFiles = [];
@@ -105,7 +78,6 @@ const getModuleData = async () => {
 			if (window.name !== "jsdom") {
 				moduleFolder = defaultModuleFolder;
 			} else {
-				// running in test mode, allow defaultModules placed under moduleDir for testing
 				if (envVars.modulesDir === "modules") {
 					moduleFolder = defaultModuleFolder;
 				}
@@ -137,17 +109,9 @@ const getModuleData = async () => {
 	return moduleFiles;
 };
 
-/**
- * Load modules via ajax request and create module objects.
- * @param {object} module Information about the module we want to load.
- * @returns {Promise<void>} resolved when module is loaded
- */
 const loadModule = async (module) => {
 	const url = module.path + module.file;
 
-	/**
-	 * @returns {Promise<void>}
-	 */
 	const afterLoad = async () => {
 		const moduleObject = Module.create(module.name);
 		if (moduleObject) {
@@ -164,11 +128,6 @@ const loadModule = async (module) => {
 	}
 };
 
-/**
- * Bootstrap modules by setting the module data and loading the scripts & styles.
- * @param {object} module Information about the module we want to load.
- * @param {Module} mObj Modules instance.
- */
 const bootstrapModule = async (module, mObj) => {
 	Log.info(`Bootstrapping module: ${module.name}`);
 	mObj.setData(module);
@@ -185,11 +144,6 @@ const bootstrapModule = async (module, mObj) => {
 	moduleObjects.push(mObj);
 };
 
-/**
- * Load a script or stylesheet by adding it to the dom.
- * @param {string} fileName Path of the file we want to load.
- * @returns {Promise} resolved when the file is loaded
- */
 const loadFile = (fileName) => {
 	const extension = fileName.slice((Math.max(0, fileName.lastIndexOf(".")) || Infinity) + 1);
 	let script, stylesheet;
@@ -248,37 +202,20 @@ const loadFile = (fileName) => {
 	}
 };
 
-/* Public Methods */
-
-/**
- * Load all modules as defined in the config.
- */
 export const loadModules = async () => {
 	const moduleData = await getModuleData();
 	const envVars = await getEnvVars();
 	const customCss = envVars.customCss;
 
-	// Load all modules
 	for (const module of moduleData) {
 		await loadModule(module);
 	}
 
-	// Load custom.css
-	// Since this happens after loading the modules,
-	// it overwrites the default styles.
 	await loadFile(customCss);
 
-	// Start all modules.
 	await startModules();
 };
 
-/**
- * Load a file (script or stylesheet).
- * Prevent double loading and search for files defined in js/vendor.js.
- * @param {string} fileName Path of the file we want to load.
- * @param {Module} module The module that calls the loadFile function.
- * @returns {Promise} resolved when the file is loaded
- */
 export const loadFileForModule = (fileName, module) => {
 	if (loadedFiles.indexOf(fileName.toLowerCase()) !== -1) {
 		Log.log(`File already loaded: ${fileName}`);
@@ -286,21 +223,15 @@ export const loadFileForModule = (fileName, module) => {
 	}
 
 	if (fileName.indexOf("http://") === 0 || fileName.indexOf("https://") === 0 || fileName.indexOf("/") !== -1) {
-		// This is an absolute or relative path.
-		// Load it and then return.
 		loadedFiles.push(fileName.toLowerCase());
 		return loadFile(fileName);
 	}
 
 	if (globalThis.vendor[fileName] !== undefined) {
-		// This file is defined in js/vendor.js.
-		// Load it from its location.
 		loadedFiles.push(fileName.toLowerCase());
 		return loadFile(`${globalThis.vendor[fileName]}`);
 	}
 
-	// File not loaded yet.
-	// Load it based on the module path.
 	loadedFiles.push(fileName.toLowerCase());
 	return loadFile(module.file(fileName));
 };

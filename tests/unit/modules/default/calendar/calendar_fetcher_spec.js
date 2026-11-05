@@ -19,8 +19,6 @@ const makeFetcher = (options = {}) => new CalendarFetcher(
 	options.selfSignedCert ?? false
 );
 
-// Triggers a fetch and resolves once the fetcher finishes (success or error).
-// On error, resolves with the errorInfo object so tests can inspect it.
 const emitResponse = (fetcher, response) => new Promise((resolve) => {
 	fetcher.onReceive(resolve);
 	fetcher.onError((_, errorInfo) => resolve(errorInfo));
@@ -54,7 +52,6 @@ describe("CalendarFetcher", () => {
 			await emitResponse(fetcher, new Response(futureEventICS(), { status: 200 }));
 			expect(fetcher.events).toHaveLength(1);
 
-			// 304 Not Modified has an empty body: events must be preserved
 			await emitResponse(fetcher, new Response(null, { status: 304 }));
 			expect(fetcher.events).toHaveLength(1);
 		});

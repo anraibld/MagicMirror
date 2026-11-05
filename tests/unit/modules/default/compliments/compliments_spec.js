@@ -2,7 +2,6 @@ describe("Compliments module", () => {
 	let complimentsModule;
 
 	beforeEach(() => {
-		// Mock global dependencies
 		global.Module = {
 			register: vi.fn((name, moduleDefinition) => {
 				complimentsModule = moduleDefinition;
@@ -15,11 +14,9 @@ describe("Compliments module", () => {
 		};
 		global.Cron = vi.fn();
 
-		// Load the module
 		const defaults = require("../../../../../js/defaults");
 		require(`../../../../../${defaults.defaultModulesDir}/compliments/compliments`);
 
-		// Setup module instance
 		complimentsModule.config = { ...complimentsModule.defaults };
 		complimentsModule.name = "compliments";
 		complimentsModule.file = vi.fn((path) => `http://localhost:8080/${defaults.defaultModulesDir}/compliments/${path}`);

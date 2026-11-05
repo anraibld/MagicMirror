@@ -1,16 +1,9 @@
-/**
- * OpenMeteo Weather Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- * Uses MSW to mock HTTP responses from the Open-Meteo API.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
 
 import openMeteoData from "../../../../../mocks/weather_openmeteo_current.json" with { type: "json" };
 import openMeteoCurrentWeatherData from "../../../../../mocks/weather_openmeteo_current_weather.json" with { type: "json" };
-// Real API returns current + forecast in one response
 const currentData = openMeteoCurrentWeatherData;
 const forecastData = openMeteoData;
 
@@ -19,7 +12,6 @@ const GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client*";
 let server;
 
 beforeAll(() => {
-	// Mock global fetch for geocoding (used by provider's #fetchLocation)
 	server = setupServer(
 		http.get(GEOCODE_URL, () => {
 			return HttpResponse.json({
@@ -110,7 +102,7 @@ describe("OpenMeteoProvider", () => {
 			const url = new URL(provider.fetcher.url);
 			const params = url.searchParams;
 
-			expect(params.get("forecast_days")).toBe("6"); // 5 days + 1
+			expect(params.get("forecast_days")).toBe("6");
 			expect(params.has("start_date")).toBe(false);
 			expect(params.has("end_date")).toBe(false);
 		});
@@ -219,7 +211,7 @@ describe("OpenMeteoProvider", () => {
 			const firstDay = result[0];
 			expect(firstDay.minTemperature).toBe(-9.2);
 			expect(firstDay.maxTemperature).toBe(-0.2);
-			expect(firstDay.temperature).toBeCloseTo(-4.7, 0); // (-0.2+-9.2)/2
+			expect(firstDay.temperature).toBeCloseTo(-4.7, 0);
 
 			expect(firstDay.sunrise).toBeInstanceOf(Date);
 			expect(firstDay.sunset).toBeInstanceOf(Date);
@@ -247,9 +239,7 @@ describe("OpenMeteoProvider", () => {
 
 			const result = await dataPromise;
 
-			// Mock data has no rain_sum field - provider returns null for missing data
 			expect(result[0].rain).toBeNull();
-			// precipitation_sum has value 0.0 in mock data
 			expect(result[0].precipitationAmount).toBe(0.0);
 		});
 	});
@@ -336,7 +326,6 @@ describe("OpenMeteoProvider", () => {
 			await provider.initialize();
 			provider.stop();
 
-			// Should not throw
 			expect(provider.fetcher).not.toBeNull();
 		});
 	});

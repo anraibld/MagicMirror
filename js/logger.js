@@ -1,11 +1,5 @@
-// Logger for MagicMirror² — works both in Node.js (CommonJS) and the browser (global).
 (() => {
 
-	/**
-	 * Creates the logger object. Logging is disabled when running in test mode
-	 * (Node.js) or inside jsdom (browser).
-	 * @returns {object} The logger object with log level methods.
-	 */
 	const makeLogger = () => {
 		const enableLog = typeof module !== "undefined"
 			? process.env.mmTestMode !== "true"
@@ -28,8 +22,6 @@
 				timeStamp: console.timeStamp.bind(console)
 			};
 
-			// Only these methods are affected by setLogLevel.
-			// Utility methods (group, time, etc.) are always active.
 			logLevel.setLogLevel = (newLevel) => {
 				for (const key of ["debug", "log", "info", "warn", "error"]) {
 					const disabled = newLevel && !newLevel.includes(key.toUpperCase());
@@ -86,11 +78,10 @@
 							return styleText("gray", parentDir === "js" ? `[${baseName}]` : `[${parentDir}]`);
 						}
 					}
-				} catch { /* ignore */ }
+				} catch { }
 				return styleText("gray", "[unknown]");
 			};
 
-			// Patch console methods to prepend timestamp, level label, and caller prefix.
 			for (const method of ["debug", "log", "info", "warn", "error"]) {
 				const original = console[method].bind(console);
 				const labelRaw = `[${method.toUpperCase()}]`.padEnd(7);
@@ -106,10 +97,8 @@
 				};
 			}
 		}
-		// Node, CommonJS
 		module.exports = makeLogger();
 	} else {
-		// Browser globals
 		window.Log = makeLogger();
 	}
 })();

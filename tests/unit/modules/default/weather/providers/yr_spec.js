@@ -1,13 +1,3 @@
-/**
- * Yr.no Weather Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- * Yr.no is the Norwegian Meteorological Institute API.
- *
- * Uses fake timers to ensure deterministic timeseries selection.
- * The provider picks the closest past entry from timeseries based on new Date().
- * Fixed to 2026-02-06T21:30:00Z → selects timeseries[0] at 21:00 with T=-5.8°C.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, beforeEach, afterAll, afterEach } from "vitest";
@@ -16,8 +6,6 @@ import yrData from "../../../../../mocks/weather_yr.json" with { type: "json" };
 
 const YR_FORECAST_URL = "https://api.met.no/weatherapi/locationforecast/**";
 
-// Fixed time: 30 minutes after the first timeseries entry (2026-02-06T21:00:00Z)
-// This ensures timeseries[0] is always chosen as the closest past entry.
 const FAKE_NOW = new Date("2026-02-06T21:30:00Z");
 
 let server;
@@ -75,14 +63,14 @@ describe("YrProvider", () => {
 
 		it("should enforce minimum 10-minute update interval", () => {
 			const provider = new YrProvider({
-				updateInterval: 60000 // 1 minute - too short
+				updateInterval: 60000
 			});
 			expect(provider.config.updateInterval).toBe(600000);
 		});
 
 		it("should allow intervals >= 10 minutes", () => {
 			const provider = new YrProvider({
-				updateInterval: 900000 // 15 minutes
+				updateInterval: 900000
 			});
 			expect(provider.config.updateInterval).toBe(900000);
 		});
@@ -133,12 +121,10 @@ describe("YrProvider", () => {
 			const result = await dataPromise;
 
 			expect(result).toBeDefined();
-			// With fake time at 21:30, provider selects timeseries[0] (21:00 UTC)
 			expect(result.temperature).toBe(-5.8);
 			expect(result.windSpeed).toBe(6.0);
 			expect(result.windFromDirection).toBe(37.0);
 			expect(result.humidity).toBe(66.5);
-			// 21:00 is after sunset (16:30), symbol_code "snow" maps to "snow"
 			expect(result.weatherType).toBe("snow");
 		});
 
@@ -272,14 +258,11 @@ describe("YrProvider", () => {
 				provider.setCallbacks(resolve, vi.fn());
 			});
 
-			// Uses yrData from beforeAll which has symbol_code "snow"
-
 			await provider.initialize();
 			provider.start();
 
 			const result = await dataPromise;
 
-			// 21:00 is after sunset (16:30), next_1_hours symbol_code is "snow"
 			expect(result.weatherType).toBe("snow");
 		});
 	});

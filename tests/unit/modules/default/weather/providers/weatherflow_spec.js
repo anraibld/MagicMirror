@@ -1,8 +1,3 @@
-/**
- * WeatherFlow Weather Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
@@ -113,7 +108,6 @@ describe("WeatherFlowProvider", () => {
 
 			const result = await dataPromise;
 
-			// Wind speed 15 km/h -> ~4.17 m/s
 			expect(result.windSpeed).toBeCloseTo(4.17, 1);
 		});
 
@@ -232,7 +226,6 @@ describe("WeatherFlowProvider", () => {
 
 			const result = await dataPromise;
 
-			// First day should have UV from hourly data
 			expect(result[0]).toHaveProperty("uvIndex");
 			expect(result[0].uvIndex).toBeGreaterThanOrEqual(0);
 		});
@@ -246,7 +239,6 @@ describe("WeatherFlowProvider", () => {
 				type: "current"
 			});
 
-			// Invalid responses return null without calling error callback
 			const dataPromise = new Promise((resolve) => {
 				provider.setCallbacks(resolve, vi.fn());
 			});

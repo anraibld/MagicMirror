@@ -26,15 +26,14 @@ describe("Weather provider utils tests", () => {
 	describe("applyTimezoneOffset", () => {
 		it("should apply positive offset correctly", () => {
 			const date = new Date("2026-02-02T12:00:00Z");
-			const result = providerUtils.applyTimezoneOffset(date, 120); // +2 hours
-			// The function converts to UTC, then applies offset
+			const result = providerUtils.applyTimezoneOffset(date, 120);
 			const expected = new Date(date.getTime() + date.getTimezoneOffset() * 60000 + 120 * 60000);
 			expect(result.getTime()).toBe(expected.getTime());
 		});
 
 		it("should apply negative offset correctly", () => {
 			const date = new Date("2026-02-02T12:00:00Z");
-			const result = providerUtils.applyTimezoneOffset(date, -300); // -5 hours
+			const result = providerUtils.applyTimezoneOffset(date, -300);
 			const expected = new Date(date.getTime() + date.getTimezoneOffset() * 60000 - 300 * 60000);
 			expect(result.getTime()).toBe(expected.getTime());
 		});
@@ -70,8 +69,8 @@ describe("Weather provider utils tests", () => {
 
 	describe("getSunTimes", () => {
 		it("should return sunrise and sunset times", () => {
-			const date = new Date("2026-06-21T12:00:00Z"); // Summer solstice
-			const lat = 52.52; // Berlin
+			const date = new Date("2026-06-21T12:00:00Z");
+			const lat = 52.52;
 			const lon = 13.405;
 
 			const result = providerUtils.getSunTimes(date, lat, lon);
@@ -86,9 +85,7 @@ describe("Weather provider utils tests", () => {
 		it("should handle different locations", () => {
 			const date = new Date("2026-06-21T12:00:00Z");
 
-			// London
 			const london = providerUtils.getSunTimes(date, 51.5074, -0.1278);
-			// Tokyo
 			const tokyo = providerUtils.getSunTimes(date, 35.6762, 139.6503);
 
 			expect(london.sunrise.getTime()).not.toBe(tokyo.sunrise.getTime());
@@ -130,12 +127,12 @@ describe("Weather provider utils tests", () => {
 		it("should format positive offsets correctly", () => {
 			expect(providerUtils.formatTimezoneOffset(60)).toBe("+01:00");
 			expect(providerUtils.formatTimezoneOffset(120)).toBe("+02:00");
-			expect(providerUtils.formatTimezoneOffset(330)).toBe("+05:30"); // India
+			expect(providerUtils.formatTimezoneOffset(330)).toBe("+05:30");
 		});
 
 		it("should format negative offsets correctly", () => {
-			expect(providerUtils.formatTimezoneOffset(-300)).toBe("-05:00"); // EST
-			expect(providerUtils.formatTimezoneOffset(-480)).toBe("-08:00"); // PST
+			expect(providerUtils.formatTimezoneOffset(-300)).toBe("-05:00");
+			expect(providerUtils.formatTimezoneOffset(-480)).toBe("-08:00");
 		});
 
 		it("should format zero offset correctly", () => {
@@ -150,17 +147,17 @@ describe("Weather provider utils tests", () => {
 
 	describe("getDateString", () => {
 		it("should format date as YYYY-MM-DD (local time)", () => {
-			const date = new Date(2026, 1, 2, 12, 34, 56); // Feb 2, 2026 (month is 0-indexed)
+			const date = new Date(2026, 1, 2, 12, 34, 56);
 			expect(providerUtils.getDateString(date)).toBe("2026-02-02");
 		});
 
 		it("should handle single-digit months and days correctly", () => {
-			const date = new Date(2026, 0, 5, 12, 0, 0); // Jan 5, 2026
+			const date = new Date(2026, 0, 5, 12, 0, 0);
 			expect(providerUtils.getDateString(date)).toBe("2026-01-05");
 		});
 
 		it("should handle end of year", () => {
-			const date = new Date(2025, 11, 31, 23, 59, 59); // Dec 31, 2025
+			const date = new Date(2025, 11, 31, 23, 59, 59);
 			expect(providerUtils.getDateString(date)).toBe("2025-12-31");
 		});
 	});

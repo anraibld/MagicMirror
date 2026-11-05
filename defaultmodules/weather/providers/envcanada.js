@@ -3,17 +3,6 @@ const { convertKmhToMs } = require("../provider-utils");
 const WeatherProvider = require("../weatherprovider");
 const HTTPFetcher = require("#http_fetcher");
 
-/**
- * Server-side weather provider for Environment Canada MSC Datamart
- * Canada only, no API key required (anonymous access)
- *
- * Documentation:
- * https://dd.weather.gc.ca/citypage_weather/schema/
- * https://eccc-msc.github.io/open-data/msc-datamart/readme_en/
- *
- * Requires siteCode and provCode config parameters
- * See https://dd.weather.gc.ca/citypage_weather/docs/site_list_en.csv
- */
 class EnvCanadaProvider extends WeatherProvider {
 	constructor (config) {
 		super();
@@ -50,7 +39,6 @@ class EnvCanadaProvider extends WeatherProvider {
 		this.fetcher.on("response", async (response, requestUrl) => {
 			if (response.status === 304) return;
 			try {
-				// Ignore a response from the previous hourly directory.
 				if (requestUrl !== this.#getIndexUrl()) {
 					Log.debug("[envcanada] Ignoring stale index response");
 					return;
@@ -60,7 +48,6 @@ class EnvCanadaProvider extends WeatherProvider {
 				const cityPageURL = this.#extractCityPageURL(html, requestUrl);
 
 				if (!cityPageURL) {
-					// This can happen during hour transitions when old responses arrive
 					Log.debug("[envcanada] Could not find city page URL (may be stale response from previous hour)");
 					return;
 				}
@@ -131,14 +118,12 @@ class EnvCanadaProvider extends WeatherProvider {
 	#generateCurrentWeather (xml) {
 		const current = { date: new Date() };
 
-		// Try to get temperature from currentConditions first
 		const currentTempStr = this.#extract(xml, /<currentConditions>.*?<temperature[^>]*>(.*?)<\/temperature>/s);
 
 		if (currentTempStr && currentTempStr !== "") {
 			current.temperature = parseFloat(currentTempStr);
 			this.cacheCurrentTemp = current.temperature;
 		} else {
-			// Fallback: extract from first forecast period if currentConditions is empty
 			const firstForecast = xml.match(/<forecast>(.*?)<\/forecast>/s);
 			if (firstForecast) {
 				const forecastXml = firstForecast[1];
@@ -154,7 +139,6 @@ class EnvCanadaProvider extends WeatherProvider {
 			}
 		}
 
-		// Wind chill / humidex for feels like temperature
 		const windChill = this.#extract(xml, /<windChill[^>]*>(.*?)<\/windChill>/);
 		const humidex = this.#extract(xml, /<humidex[^>]*>(.*?)<\/humidex>/);
 		if (windChill) {
@@ -163,7 +147,6 @@ class EnvCanadaProvider extends WeatherProvider {
 			current.feelsLikeTemp = parseFloat(humidex);
 		}
 
-		// Get wind and icon from currentConditions or first forecast
 		const firstForecast = xml.match(/<forecast>(.*?)<\/forecast>/s);
 		if (!firstForecast) {
 			Log.warn("[envcanada] No forecast data available");
@@ -172,7 +155,6 @@ class EnvCanadaProvider extends WeatherProvider {
 
 		const forecastXml = firstForecast[1];
 
-		// Wind speed - try currentConditions first, fallback to forecast
 		let windSpeed = this.#extract(xml, /<currentConditions>.*?<wind>.*?<speed[^>]*>(.*?)<\/speed>/s);
 		if (!windSpeed) {
 			windSpeed = this.#extract(forecastXml, /<speed[^>]*>(.*?)<\/speed>/);
@@ -181,31 +163,26 @@ class EnvCanadaProvider extends WeatherProvider {
 			current.windSpeed = (windSpeed === "calm") ? 0 : convertKmhToMs(parseFloat(windSpeed));
 		}
 
-		// Wind bearing - try currentConditions first, fallback to forecast
 		let windBearing = this.#extract(xml, /<currentConditions>.*?<wind>.*?<bearing[^>]*>(.*?)<\/bearing>/s);
 		if (!windBearing) {
 			windBearing = this.#extract(forecastXml, /<bearing[^>]*>(.*?)<\/bearing>/);
 		}
 		if (windBearing) current.windFromDirection = parseFloat(windBearing);
 
-		// Try icon from currentConditions first, fallback to forecast
 		let iconCode = this.#extract(xml, /<currentConditions>.*?<iconCode[^>]*>(.*?)<\/iconCode>/s);
 		if (!iconCode) {
 			iconCode = this.#extract(forecastXml, /<iconCode[^>]*>(.*?)<\/iconCode>/);
 		}
 		if (iconCode) current.weatherType = this.#convertWeatherType(iconCode);
 
-		// Humidity from currentConditions
 		const humidity = this.#extract(xml, /<currentConditions>.*?<relativeHumidity[^>]*>(.*?)<\/relativeHumidity>/s);
 		if (humidity) current.humidity = parseFloat(humidity);
 
-		// Precipitation probability from forecast
 		const pop = this.#extract(forecastXml, /<pop[^>]*>(.*?)<\/pop>/);
 		if (pop && pop !== "") {
 			current.precipitationProbability = parseFloat(pop);
 		}
 
-		// Sunrise/sunset (from riseSet, independent of currentConditions)
 		const sunriseTime = this.#extract(xml, /<dateTime[^>]*name="sunrise"[^>]*>.*?<timeStamp>(.*?)<\/timeStamp>/s);
 		const sunsetTime = this.#extract(xml, /<dateTime[^>]*name="sunset"[^>]*>.*?<timeStamp>(.*?)<\/timeStamp>/s);
 		if (sunriseTime) current.sunrise = this.#parseECTime(sunriseTime);
@@ -220,17 +197,14 @@ class EnvCanadaProvider extends WeatherProvider {
 
 		if (forecasts.length === 0) return days;
 
-		// Get current temp
 		const currentTempStr = this.#extract(xml, /<currentConditions>.*?<temperature[^>]*>(.*?)<\/temperature>/s);
 		const currentTemp = currentTempStr ? parseFloat(currentTempStr) : null;
 
-		// Check if first forecast is Today or Tonight
 		const isToday = forecasts[0].includes("textForecastName=\"Today\"");
 
 		const nextDay = isToday ? 2 : 1;
 		const lastDay = isToday ? 12 : 11;
 
-		// Process first day
 		const firstDay = {
 			date: new Date(),
 			precipitationProbability: null
@@ -241,7 +215,6 @@ class EnvCanadaProvider extends WeatherProvider {
 		if (firstIcon) firstDay.weatherType = this.#convertWeatherType(firstIcon);
 		days.push(firstDay);
 
-		// Process remaining days
 		let date = new Date();
 		for (let i = nextDay; i < lastDay && i < forecasts.length; i += 2) {
 			date = new Date(date);
@@ -341,7 +314,6 @@ class EnvCanadaProvider extends WeatherProvider {
 	}
 
 	#extractCityPageURL (html, indexURL) {
-		// New format: {timestamp}_MSC_CitypageWeather_{siteCode}_en.xml
 		const pattern = `[^"]*_MSC_CitypageWeather_${this.config.siteCode}_en\\.xml`;
 		const match = html.match(new RegExp(`href="(${pattern})"`));
 
@@ -362,7 +334,6 @@ class EnvCanadaProvider extends WeatherProvider {
 		const min = parseInt(timeStr.substring(10, 12), 10);
 		const s = timeStr.length >= 14 ? parseInt(timeStr.substring(12, 14), 10) : 0;
 
-		// Create UTC date since input timestamps are in UTC
 		return new Date(Date.UTC(y, m, d, h, min, s));
 	}
 

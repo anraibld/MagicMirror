@@ -1,5 +1,3 @@
-# This workflow will run a spellcheck on the codebase.
-# It runs a few days before each release. At 00:00 on day-of-month 27 in March, June, September, and December.
 
 name: Run Spellcheck
 

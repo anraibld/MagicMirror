@@ -1,8 +1,3 @@
-// Tests use vi.spyOn on shared module objects (dns, undici).
-// vi.spyOn modifies the object property directly on the cached module instance, so it
-// is intercepted by server_functions.js regardless of the Module.prototype.require override
-// in vitest-setup.js.  restoreAllMocks:true auto-restores spies, but may reuse the same
-// spy instance — mockClear() is called explicitly in beforeEach to reset call history.
 const dns = require("node:dns");
 const undici = require("undici");
 const { cors, getUserAgent, replaceSecretPlaceholder } = require("#server_functions");
@@ -86,11 +81,8 @@ describe("server_functions tests", () => {
 			fetchResponseHeadersGet = vi.fn(() => {});
 			fetchResponseArrayBuffer = vi.fn(() => {});
 
-			// Mock DNS to return a public IP (SSRF check must pass for these tests)
 			vi.spyOn(dns.promises, "lookup").mockResolvedValue({ address: "93.184.216.34", family: 4 });
 
-			// vi.spyOn may return the same spy instance across tests when restoreAllMocks
-			// restores-but-reuses; mockClear() explicitly resets call history each time.
 			fetchSpy = vi.spyOn(undici, "fetch");
 			fetchSpy.mockClear();
 			fetchSpy.mockImplementation(() => Promise.resolve({

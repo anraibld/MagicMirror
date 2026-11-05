@@ -26,7 +26,6 @@ describe("Weather module", () => {
 			});
 
 			it("should render feels like temperature", async () => {
-				// Template contains &nbsp; which renders as \xa0
 				await expect(page.locator(".weather .normal.medium.feelslike span.dimmed")).toHaveText("93.7\xa0 Feels like -5.6°");
 			});
 

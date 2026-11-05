@@ -5,13 +5,6 @@ const serverBasicAuth = require("../helpers/basic-auth");
 describe("Calendar module", () => {
 	let page;
 
-	/**
-	 * Assert the number of matching elements.
-	 * @param {string} selector css selector
-	 * @param {number} expectedLength expected number of elements
-	 * @param {string} [not] optional negation marker (use "not" to negate)
-	 * @returns {Promise<void>}
-	 */
 	const testElementLength = async (selector, expectedLength, not) => {
 		const locator = page.locator(selector);
 		if (not === "not") {
@@ -89,7 +82,6 @@ describe("Calendar module", () => {
 		});
 	});
 
-	//Will contain everyday an fullDayEvent that starts today and ends tomorrow, and one starting tomorrow and ending the day after tomorrow
 	describe("FullDayEvent over several days should show how many days are left from the from the starting date on", () => {
 		beforeAll(async () => {
 			await helpers.startApplication("tests/configs/modules/calendar/long-fullday-event.js");

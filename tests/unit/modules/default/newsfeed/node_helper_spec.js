@@ -67,7 +67,6 @@ afterEach(() => {
 	vi.resetModules();
 });
 
-
 describe("newsfeed node_helper", () => {
 	it("rejects malformed feed URLs without creating a fetcher", async () => {
 		const { helper, fetcherInstances } = await loadNewsfeedNodeHelper();

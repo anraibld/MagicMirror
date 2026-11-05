@@ -26,7 +26,6 @@ class WeatherAPIProvider extends WeatherProvider {
 		this.#initializeFetcher();
 	}
 
-
 	#validateConfig () {
 		this.config.type = `${this.config.type ?? ""}`.trim().toLowerCase();
 

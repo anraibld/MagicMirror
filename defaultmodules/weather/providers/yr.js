@@ -3,12 +3,6 @@ const { formatTimezoneOffset, getDateString, validateCoordinates } = require("..
 const WeatherProvider = require("../weatherprovider");
 const HTTPFetcher = require("#http_fetcher");
 
-/**
- * Server-side weather provider for Yr.no (Norwegian Meteorological Institute)
- * Terms of service: https://developer.yr.no/doc/TermsOfService/
- *
- * Note: Minimum update interval is 10 minutes (600000 ms) per API terms
- */
 class YrProvider extends WeatherProvider {
 	constructor (config) {
 		super();
@@ -19,24 +13,21 @@ class YrProvider extends WeatherProvider {
 			altitude: 0,
 			lat: 0,
 			lon: 0,
-			currentForecastHours: 1, // 1, 6 or 12
+			currentForecastHours: 1,
 			type: "current",
-			updateInterval: 10 * 60 * 1000, // 10 minutes minimum
+			updateInterval: 10 * 60 * 1000,
 			...config
 		};
 
-		// Enforce 10 minute minimum per API terms
 		if (this.config.updateInterval < 600000) {
 			Log.warn("[yr] Minimum update interval is 10 minutes (600000 ms). Adjusting configuration.");
 			this.config.updateInterval = 600000;
 		}
 
-		this.fetcher = null; // yr manages its own fetcher with If-Modified-Since caching
-		// Cache for sunrise/sunset data
+		this.fetcher = null;
 		this.stellarData = null;
 		this.stellarDataDate = null;
 
-		// Cache for weather data (If-Modified-Since support)
 		this.weatherCache = {
 			data: null,
 			lastModified: null,
@@ -45,7 +36,6 @@ class YrProvider extends WeatherProvider {
 	}
 
 	async initialize () {
-		// Yr.no requires max 4 decimal places
 		validateCoordinates(this.config, 4);
 		await this.#fetchStellarData();
 		this.#initializeFetcher();
@@ -54,7 +44,6 @@ class YrProvider extends WeatherProvider {
 	async #fetchStellarData () {
 		const today = getDateString(new Date());
 
-		// Check if we already have today's data
 		if (this.stellarDataDate === today && this.stellarData) {
 			return;
 		}
@@ -79,13 +68,11 @@ class YrProvider extends WeatherProvider {
 				Log.warn(`[yr] Could not fetch stellar data: HTTP ${response.status}`);
 				this.stellarDataDate = today;
 			} else {
-				// Parse and store the stellar data
 				const data = await response.json();
-				// Transform single-day response into array format expected by #getStellarInfoForDate
 				if (data && data.properties) {
 					this.stellarData = [
 						{
-							date: data.when.interval[0], // ISO date string
+							date: data.when.interval[0],
 							sunrise: data.properties.sunrise,
 							sunset: data.properties.sunset
 						}
@@ -106,7 +93,6 @@ class YrProvider extends WeatherProvider {
 			Accept: "application/json"
 		};
 
-		// Add If-Modified-Since header if we have cached data
 		if (this.weatherCache.lastModified) {
 			headers["If-Modified-Since"] = this.weatherCache.lastModified;
 		}
@@ -120,7 +106,6 @@ class YrProvider extends WeatherProvider {
 
 		this.fetcher.on("response", async (response) => {
 			try {
-				// Handle 304 Not Modified - use cached data
 				if (response.status === 304) {
 					Log.log("[yr] Data not modified, using cache");
 					if (this.weatherCache.data) {
@@ -131,7 +116,6 @@ class YrProvider extends WeatherProvider {
 
 				const data = await response.json();
 
-				// Store cache headers
 				const lastModified = response.headers.get("Last-Modified");
 				const expires = response.headers.get("Expires");
 
@@ -143,7 +127,6 @@ class YrProvider extends WeatherProvider {
 				}
 				this.weatherCache.data = data;
 
-				// Update headers for next request
 				if (lastModified && this.fetcher) {
 					this.fetcher.customHeaders["If-Modified-Since"] = lastModified;
 				}
@@ -173,7 +156,6 @@ class YrProvider extends WeatherProvider {
 				throw new Error("Invalid weather data");
 			}
 
-			// Refresh stellar data if needed (new day or using cached weather data)
 			if (fromCache) {
 				await this.#fetchStellarData();
 			}
@@ -213,7 +195,6 @@ class YrProvider extends WeatherProvider {
 		const now = new Date();
 		const timeseries = data.properties.timeseries;
 
-		// Find closest forecast in the past
 		let forecast = timeseries[0];
 		let closestDiff = Math.abs(now - new Date(forecast.time));
 
@@ -257,7 +238,6 @@ class YrProvider extends WeatherProvider {
 		const timeseries = data.properties.timeseries;
 		const dailyData = new Map();
 
-		// Collect all data points for each day
 		for (const entry of timeseries) {
 			const date = new Date(entry.time);
 			const dateStr = getDateString(date);
@@ -274,12 +254,10 @@ class YrProvider extends WeatherProvider {
 
 			const dayData = dailyData.get(dateStr);
 
-			// Collect temperature from instant data
 			if (entry.data.instant?.details?.air_temperature !== undefined) {
 				dayData.temps.push(entry.data.instant.details.air_temperature);
 			}
 
-			// Collect data from forecast periods (prefer longer periods to avoid double-counting)
 			const forecast = entry.data.next_12_hours || entry.data.next_6_hours || entry.data.next_1_hours;
 			if (forecast) {
 				if (forecast.details?.precipitation_amount !== undefined) {
@@ -294,7 +272,6 @@ class YrProvider extends WeatherProvider {
 			}
 		}
 
-		// Convert collected data to forecast objects
 		const days = [];
 		for (const data of dailyData.values()) {
 			const stellarInfo = this.#getStellarInfoForDate(data.date);
@@ -316,7 +293,6 @@ class YrProvider extends WeatherProvider {
 			days.push(dayData);
 		}
 
-		// Sort by date to ensure correct order
 		return days.sort((a, b) => a.date - b.date);
 	}
 
@@ -394,7 +370,6 @@ class YrProvider extends WeatherProvider {
 	#convertWeatherType (symbolCode, isDayTime) {
 		if (!symbolCode) return null;
 
-		// Yr.no uses symbol codes like "clearsky_day", "partlycloudy_night", etc.
 		const symbol = symbolCode.replace(/_day|_night/g, "");
 
 		const mappings = {

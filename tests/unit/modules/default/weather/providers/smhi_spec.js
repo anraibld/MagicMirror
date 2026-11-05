@@ -1,11 +1,3 @@
-/**
- * SMHI Weather Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- * SMHI provides data only for Sweden, uses metric system.
- *
- * Fixture: weather_smhi.json uses SNOW1gv1 format (replaced PMP3gv2 2026-03-31)
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
@@ -77,7 +69,6 @@ describe("SMHIProvider", () => {
 
 			await provider.initialize();
 
-			// After validateCoordinates(config, 6), decimals should be truncated
 			expect(provider.config.lat.toString().split(".")[1]?.length).toBeLessThanOrEqual(6);
 			expect(provider.config.lon.toString().split(".")[1]?.length).toBeLessThanOrEqual(6);
 		});
@@ -125,7 +116,6 @@ describe("SMHIProvider", () => {
 				provider.setCallbacks(resolve, vi.fn());
 			});
 
-			// Use entry at index 2 which has ptype=5 (snow) but pmedian=0.0
 			const rainData = JSON.parse(JSON.stringify(smhiData));
 			rainData.timeSeries = [rainData.timeSeries[2]];
 			rainData.timeSeries[0].time = new Date().toISOString();
@@ -141,7 +131,6 @@ describe("SMHIProvider", () => {
 
 			const result = await dataPromise;
 
-			// pmedian is 0.0 at this entry, so all precipitation amounts are 0
 			expect(result.rain).toBe(0);
 			expect(result.precipitationAmount).toBe(0.0);
 			expect(result.snow).toBe(0);

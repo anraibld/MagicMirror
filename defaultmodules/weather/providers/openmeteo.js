@@ -1,16 +1,10 @@
 const Log = require("logger");
 const WeatherProvider = require("../weatherprovider");
 
-// https://www.bigdatacloud.com/docs/api/free-reverse-geocode-to-city-api
 const GEOCODE_BASE = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 const OPEN_METEO_BASE = "https://api.open-meteo.com/v1";
 
-/**
- * Server-side weather provider for Open-Meteo
- * see https://open-meteo.com/
- */
 class OpenMeteoProvider extends WeatherProvider {
-	// https://open-meteo.com/en/docs
 	hourlyParams = [
 		"temperature_2m",
 		"relativehumidity_2m",
@@ -213,7 +207,7 @@ class OpenMeteoProvider extends WeatherProvider {
 			case "hourly":
 			case "daily":
 			case "forecast":
-				params.forecast_days = maxNumberOfDays + 1; // Open-Meteo counts today as day 1, so maxNumberOfDays=5 needs forecast_days=6
+				params.forecast_days = maxNumberOfDays + 1;
 				break;
 			case "current":
 				params.current_weather = true;
@@ -246,8 +240,6 @@ class OpenMeteoProvider extends WeatherProvider {
 			const value = data[key][index];
 			return {
 				...row,
-				// Convert Unix timestamps to Date objects
-				// timezone: "auto" returns times already in location timezone
 				[key]: ["time", "sunrise", "sunset"].includes(key) ? new Date(value * 1000) : value
 			};
 		}, {}));
@@ -355,7 +347,6 @@ class OpenMeteoProvider extends WeatherProvider {
 	}
 
 	#generateWeatherDayFromCurrentWeather (parsedData) {
-		// Basic current weather data
 		const current = {
 			date: parsedData.current_weather.time,
 			windSpeed: parsedData.current_weather.windspeed,
@@ -364,10 +355,7 @@ class OpenMeteoProvider extends WeatherProvider {
 			weatherType: this.#convertWeatherType(parsedData.current_weather.weathercode, true)
 		};
 
-		// Add hourly data if available
 		if (parsedData.hourly) {
-			// Open-Meteo updates current_weather every 15 min, but hourly entries only
-			// exist at full hours — find the last entry at or before the current time.
 			const currentMs = parsedData.current_weather.time.getTime();
 			const hourlyIndex = parsedData.hourly.findLastIndex((hour) => hour.time.getTime() <= currentMs);
 			const hourData = parsedData.hourly[Math.max(0, hourlyIndex)];
@@ -380,7 +368,6 @@ class OpenMeteoProvider extends WeatherProvider {
 			current.uvIndex = hourData.uv_index;
 		}
 
-		// Add daily data if available (after transpose, daily is array of objects)
 		if (parsedData.daily && Array.isArray(parsedData.daily) && parsedData.daily[0]) {
 			const today = parsedData.daily[0];
 			if (today.sunrise) {
@@ -388,7 +375,6 @@ class OpenMeteoProvider extends WeatherProvider {
 			}
 			if (today.sunset) {
 				current.sunset = today.sunset;
-				// Update weatherType with correct day/night status
 				if (current.sunrise && current.sunset) {
 					current.weatherType = this.#convertWeatherType(
 						parsedData.current_weather.weathercode,
@@ -431,12 +417,10 @@ class OpenMeteoProvider extends WeatherProvider {
 		const now = new Date();
 
 		parsedData.hourly.forEach((weather, i) => {
-			// Skip past entries
 			if (weather.time <= now) {
 				return;
 			}
 
-			// Calculate daily index with bounds check
 			const h = Math.ceil((i + 1) / 24) - 1;
 			const safeH = Math.max(0, Math.min(h, parsedData.daily.length - 1));
 			const dailyData = parsedData.daily[safeH];

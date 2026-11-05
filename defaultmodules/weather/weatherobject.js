@@ -1,13 +1,6 @@
-/* global SunCalc, WeatherUtils */
 
-/**
- * @external Moment
- */
 class WeatherObject {
 
-	/**
-	 * Constructor for a WeatherObject
-	 */
 	constructor () {
 		this.date = null;
 		this.windSpeed = null;
@@ -61,15 +54,7 @@ class WeatherObject {
 		}
 	}
 
-	/**
-	 * Determines if the sun sets or rises next. Uses the current time and not
-	 * the date from the weather-forecast.
-	 * @param {Moment} date an optional date where you want to get the next
-	 * action for. Useful only in tests, defaults to the current time.
-	 * @returns {string|null} "sunset", "sunrise", or null if sun data unavailable
-	 */
 	nextSunAction (date = moment()) {
-		// Return null if sunrise/sunset data is unavailable
 		if (!this.sunrise || !this.sunset) {
 			return null;
 		}
@@ -83,12 +68,7 @@ class WeatherObject {
 		return WeatherUtils.calculateFeelsLike(this.temperature, this.windSpeed, this.humidity);
 	}
 
-	/**
-	 * Checks if the weatherObject is at dayTime.
-	 * @returns {boolean} true if it is at dayTime
-	 */
 	isDayTime () {
-		// Default to daytime if sunrise/sunset data unavailable
 		if (!this.sunrise || !this.sunset) {
 			return true;
 		}
@@ -96,13 +76,6 @@ class WeatherObject {
 		return now.isBetween(this.sunrise, this.sunset, undefined, "[]");
 	}
 
-	/**
-	 * Update the sunrise / sunset time depending on the location. This can be
-	 * used if your provider doesn't provide that data by itself. Then SunCalc
-	 * is used here to calculate them according to the location.
-	 * @param {number} lat latitude
-	 * @param {number} lon longitude
-	 */
 	updateSunTime (lat, lon) {
 		const now = !this.date ? new Date() : this.date.toDate();
 		const times = SunCalc.getTimes(now, lat, lon);
@@ -110,13 +83,6 @@ class WeatherObject {
 		this.sunset = moment(times.sunset);
 	}
 
-	/**
-	 * Clone to simple object to prevent mutating and deprecation of legacy library.
-	 *
-	 * Before being handed to other modules, mutable values must be cloned safely.
-	 * Especially 'moment' object is not immutable, so original 'date', 'sunrise', 'sunset' could be corrupted or changed by other modules.
-	 * @returns {object} plained object clone of original weatherObject
-	 */
 	simpleClone () {
 		const toFlat = ["date", "sunrise", "sunset"];
 		const clone = { ...this };
@@ -127,7 +93,6 @@ class WeatherObject {
 	}
 }
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = WeatherObject;
 }

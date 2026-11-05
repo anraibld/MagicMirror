@@ -6,13 +6,11 @@ const Log = require("logger");
 const NewsfeedFetcher = require("./newsfeedfetcher");
 
 module.exports = NodeHelper.create({
-	// Override start method.
 	start () {
 		Log.log(`Starting node helper for: ${this.name}`);
 		this.fetchers = [];
 	},
 
-	// Override socketNotificationReceived received.
 	socketNotificationReceived (notification, payload) {
 		if (notification === "ADD_FEED") {
 			this.createFetcher(payload.feed, payload.config);
@@ -21,15 +19,8 @@ module.exports = NodeHelper.create({
 		}
 	},
 
-	/**
-	 * Checks whether a URL can be displayed in an iframe by inspecting
-	 * X-Frame-Options and Content-Security-Policy headers server-side.
-	 * @param {string} url The article URL to check.
-	 * @returns {null} sendSocketNotification
-	 */
 	async checkArticleUrl (url) {
 		try {
-			// 1. Parse URL
 			let parsed;
 			try {
 				parsed = new URL(url);
@@ -37,24 +28,20 @@ module.exports = NodeHelper.create({
 				return this.sendSocketNotification("ARTICLE_URL_STATUS", { url, canFrame: false });
 			}
 
-			// 2. Protocol validation
 			if (!["http:", "https:"].includes(parsed.protocol)) {
 				return this.sendSocketNotification("ARTICLE_URL_STATUS", { url, canFrame: false });
 			}
 
-			// 3. Block localhost hostname
 			if (parsed.hostname.toLowerCase() === "localhost") {
 				return this.sendSocketNotification("ARTICLE_URL_STATUS", { url, canFrame: false });
 			}
 
-			// 4. DNS lookup + IP range validation
 			const { address, family } = await dns.promises.lookup(parsed.hostname);
 			if (ipaddr.process(address).range() !== "unicast") {
 				Log.warn(`SSRF blocked in checkArticleUrl: ${url}`);
 				return this.sendSocketNotification("ARTICLE_URL_STATUS", { url, canFrame: false });
 			}
 
-			// 5. Pin IP to prevent DNS rebinding
 			const dispatcher = new undici.Agent({
 				connect: {
 					lookup: (_h, _o, cb) => {
@@ -63,7 +50,6 @@ module.exports = NodeHelper.create({
 				}
 			});
 
-			// 6. Make request with pinned IP
 			const response = await undici.fetch(url, { dispatcher, method: "HEAD" });
 			const xfo = response.headers.get("x-frame-options");
 			const csp = response.headers.get("content-security-policy");
@@ -76,12 +62,6 @@ module.exports = NodeHelper.create({
 		}
 	},
 
-	/**
-	 * Creates a fetcher for a new feed if it doesn't exist yet.
-	 * Otherwise it reuses the existing one.
-	 * @param {object} feed The feed object
-	 * @param {object} config The configuration object
-	 */
 	createFetcher (feed, config) {
 		const url = feed.url || "";
 		const encoding = feed.encoding || "UTF-8";
@@ -123,10 +103,6 @@ module.exports = NodeHelper.create({
 		fetcher.startFetch();
 	},
 
-	/**
-	 * Creates an object with all feed items of the different registered feeds,
-	 * and broadcasts these using sendSocketNotification.
-	 */
 	broadcastFeeds () {
 		const feeds = {};
 		for (const url in this.fetchers) {

@@ -11,8 +11,6 @@ const loadNodeHelper = async (config) => {
 	const UpdateHelper = vi.fn();
 	const originalRequire = Module.prototype.require;
 
-	// Use the real base NodeHelper so getServerModuleConfig() is exercised as the
-	// actual inherited method, but stub the git/update helpers to avoid I/O.
 	Module.prototype.require = function (id) {
 		if (id === "node_helper") {
 			return originalRequire.call(this, path.resolve(process.cwd(), "js/node_helper.js"));

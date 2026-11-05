@@ -16,10 +16,8 @@ describe("Alert module", () => {
 		});
 
 		it("should not show any welcome message", async () => {
-			// Wait a bit to ensure no message appears
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 
-			// Check that no alert/notification elements are present
 			await expect(page.locator(".ns-box .ns-box-inner .light.bright.small")).toHaveCount(0);
 		});
 	});
@@ -30,7 +28,6 @@ describe("Alert module", () => {
 			await helpers.getDocument();
 			page = helpers.getPage();
 
-			// Wait for the application to initialize
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 		});
 

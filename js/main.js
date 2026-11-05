@@ -1,8 +1,5 @@
-// Ensure Module global bridge is initialized before main bootstrap logic runs.
 import "./module.js";
-// Ensure formatTime is available as a global bridge before default modules (e.g. clock, weather) load.
 import "../defaultmodules/utils.js";
-// positions.js is generated at server startup and provides globalThis.modulePositions.
 import "./positions.js";
 import { AnimateCSSIn, AnimateCSSOut, addAnimateCSS, removeAnimateCSS } from "./animateCSS.js";
 import { loadModules } from "./loader.js";
@@ -11,9 +8,6 @@ import { Translator } from "./translator.js";
 
 let modules = [];
 
-/**
- * Create dom objects for all modules that are configured for a specific position.
- */
 const createDomObjects = async () => {
 	const domCreationPromises = [];
 
@@ -23,7 +17,6 @@ const createDomObjects = async () => {
 		}
 
 		let haveAnimateIn = null;
-		// check if have valid animateIn in module definition (module.data.animateIn)
 		if (module.data.animateIn && AnimateCSSIn.indexOf(module.data.animateIn) !== -1) haveAnimateIn = module.data.animateIn;
 
 		const wrapper = selectWrapper(module.data.position);
@@ -69,12 +62,6 @@ const createDomObjects = async () => {
 	}
 };
 
-/**
- * Create and render a module DOM, then notify the module.
- * @param {Module} module The module to render.
- * @param {string|null} haveAnimateIn Optional animateIn animation name.
- * @returns {Promise<void>} Resolved when module DOM is created.
- */
 const createModuleDom = async (module, haveAnimateIn) => {
 	if (haveAnimateIn) {
 		await _updateDom(module, { options: { speed: 1000, animate: { in: haveAnimateIn } } }, true);
@@ -85,11 +72,6 @@ const createModuleDom = async (module, haveAnimateIn) => {
 	_sendNotification("MODULE_DOM_CREATED", null, null, module);
 };
 
-/**
- * Select the wrapper dom object for a specific position.
- * @param {string} position The name of the position.
- * @returns {HTMLElement | void} the wrapper element
- */
 const selectWrapper = (position) => {
 	const classes = position.replace("_", " ");
 	const parentWrapper = document.getElementsByClassName(classes);
@@ -101,13 +83,6 @@ const selectWrapper = (position) => {
 	}
 };
 
-/**
- * Send a notification to all modules.
- * @param {string} notification The identifier of the notification.
- * @param {object} payload The payload of the notification.
- * @param {Module} sender The module that sent the notification.
- * @param {Module} [sendTo] The (optional) module to send the notification to.
- */
 const _sendNotification = (notification, payload, sender, sendTo) => {
 	for (const m in modules) {
 		const module = modules[m];
@@ -117,13 +92,6 @@ const _sendNotification = (notification, payload, sender, sendTo) => {
 	}
 };
 
-/**
- * Update the dom for a specific module.
- * @param {Module} module The module that needs an update.
- * @param {object|number} [updateOptions] The (optional) number of microseconds for the animation or object with updateOptions (speed/animates)
- * @param {boolean} [createAnimatedDom] for displaying only animateIn (used on first start of MagicMirror)
- * @returns {Promise<void>} Resolved when the dom is fully updated.
- */
 const _updateDom = async (module, updateOptions, createAnimatedDom = false) => {
 	let speed = updateOptions;
 	let animateOut = null;
@@ -148,17 +116,6 @@ const _updateDom = async (module, updateOptions, createAnimatedDom = false) => {
 	await updateDomWithContent(module, speed, newHeader, newContent, animateOut, animateIn, createAnimatedDom);
 };
 
-/**
- * Update the dom with the specified content
- * @param {Module} module The module that needs an update.
- * @param {number} [speed] The (optional) number of milliseconds for the animation.
- * @param {string} newHeader The new header that is generated.
- * @param {HTMLElement} newContent The new content that is generated.
- * @param {string} [animateOut] AnimateCss animation name before hidden
- * @param {string} [animateIn] AnimateCss animation name on show
- * @param {boolean} [createAnimatedDom] If true, apply content and trigger only animateIn (used on first start).
- * @returns {Promise<void>} Resolved after the module DOM update is applied or hide/show transition is scheduled.
- */
 const updateDomWithContent = async (module, speed, newHeader, newContent, animateOut, animateIn, createAnimatedDom = false) => {
 	if (module.hidden || !speed) {
 		updateModuleContent(module, newHeader, newContent);
@@ -185,13 +142,6 @@ const updateDomWithContent = async (module, speed, newHeader, newContent, animat
 	}
 };
 
-/**
- * Check if the content has changed.
- * @param {Module} module The module to check.
- * @param {string} newHeader The new header that is generated.
- * @param {HTMLElement} newContent The new content that is generated.
- * @returns {boolean} True if the module need an update, false otherwise
- */
 const moduleNeedsUpdate = (module, newHeader, newContent) => {
 	const moduleWrapper = document.getElementById(module.identifier);
 	if (moduleWrapper === null) {
@@ -214,12 +164,6 @@ const moduleNeedsUpdate = (module, newHeader, newContent) => {
 	return headerNeedsUpdate || contentNeedsUpdate;
 };
 
-/**
- * Update the content of a module on screen.
- * @param {Module} module The module to check.
- * @param {string} newHeader The new header that is generated.
- * @param {HTMLElement} newContent The new content that is generated.
- */
 const updateModuleContent = (module, newHeader, newContent) => {
 	const moduleWrapper = document.getElementById(module.identifier);
 	if (moduleWrapper === null) {
@@ -239,15 +183,7 @@ const updateModuleContent = (module, newHeader, newContent) => {
 	}
 };
 
-/**
- * Hide the module.
- * @param {Module} module The module to hide.
- * @param {number} speed The speed of the hide animation.
- * @param {() => void} callback Called when the animation is done.
- * @param {object} [options] Optional settings for the hide method.
- */
 const _hideModule = (module, speed, callback, options = {}) => {
-	// set lockString if set in options.
 	if (options.lockString) {
 		if (module.lockStrings.indexOf(options.lockString) === -1) {
 			module.lockStrings.push(options.lockString);
@@ -257,7 +193,6 @@ const _hideModule = (module, speed, callback, options = {}) => {
 	const moduleWrapper = document.getElementById(module.identifier);
 	if (moduleWrapper !== null) {
 		clearTimeout(module.showHideTimer);
-		// reset all animations if needed
 		if (module.hasAnimateOut) {
 			removeAnimateCSS(module.identifier, module.hasAnimateOut);
 			Log.debug(`${module.identifier} Force remove animateOut (in hide): ${module.hasAnimateOut}`);
@@ -268,24 +203,17 @@ const _hideModule = (module, speed, callback, options = {}) => {
 			Log.debug(`${module.identifier} Force remove animateIn (in hide): ${module.hasAnimateIn}`);
 			module.hasAnimateIn = false;
 		}
-		// haveAnimateName for verify if we are using AnimateCSS library
-		// we check AnimateCSSOut Array for validate it
-		// and finally return the animate name or `null` (for default MM² animation)
 		let haveAnimateName = null;
-		// check if have valid animateOut in module definition (module.data.animateOut)
 		if (module.data.animateOut && AnimateCSSOut.indexOf(module.data.animateOut) !== -1) haveAnimateName = module.data.animateOut;
-		// can't be override with options.animate
 		else if (options.animate && AnimateCSSOut.indexOf(options.animate) !== -1) haveAnimateName = options.animate;
 
 		if (haveAnimateName) {
-			// with AnimateCSS
 			Log.debug(`${module.identifier} Has animateOut: ${haveAnimateName}`);
 			module.hasAnimateOut = haveAnimateName;
 			addAnimateCSS(module.identifier, haveAnimateName, speed / 1000);
 			module.showHideTimer = setTimeout(() => {
 				removeAnimateCSS(module.identifier, haveAnimateName);
 				Log.debug(`${module.identifier} Remove animateOut: ${module.hasAnimateOut}`);
-				// AnimateCSS is now done
 				moduleWrapper.style.opacity = 0;
 				moduleWrapper.classList.add("hidden");
 				moduleWrapper.style.position = "fixed";
@@ -297,15 +225,10 @@ const _hideModule = (module, speed, callback, options = {}) => {
 				}
 			}, speed);
 		} else {
-			// default MM² Animate
 			moduleWrapper.style.transition = `opacity ${speed / 1000}s`;
 			moduleWrapper.style.opacity = 0;
 			moduleWrapper.classList.add("hidden");
 			module.showHideTimer = setTimeout(() => {
-				// To not take up any space, we just make the position absolute.
-				// since it's fade out anyway, we can see it lay above or
-				// below other modules. This works way better than adjusting
-				// the .display property.
 				moduleWrapper.style.position = "fixed";
 
 				updateWrapperStates();
@@ -316,22 +239,13 @@ const _hideModule = (module, speed, callback, options = {}) => {
 			}, speed);
 		}
 	} else {
-		// invoke callback even if no content, issue 1308
 		if (typeof callback === "function") {
 			callback();
 		}
 	}
 };
 
-/**
- * Show the module.
- * @param {Module} module The module to show.
- * @param {number} speed The speed of the show animation.
- * @param {() => void} callback Called when the animation is done.
- * @param {object} [options] Optional settings for the show method.
- */
 const _showModule = (module, speed, callback, options = {}) => {
-	// remove lockString if set in options.
 	if (options.lockString) {
 		const index = module.lockStrings.indexOf(options.lockString);
 		if (index !== -1) {
@@ -339,8 +253,6 @@ const _showModule = (module, speed, callback, options = {}) => {
 		}
 	}
 
-	// Check if there are no more lockStrings set, or the force option is set.
-	// Otherwise cancel show action.
 	if (module.lockStrings.length !== 0 && options.force !== true) {
 		Log.log(`Will not show ${module.name}. LockStrings active: ${module.lockStrings.join(",")}`);
 		if (typeof options.onError === "function") {
@@ -348,7 +260,6 @@ const _showModule = (module, speed, callback, options = {}) => {
 		}
 		return;
 	}
-	// reset all animations if needed
 	if (module.hasAnimateOut) {
 		removeAnimateCSS(module.identifier, module.hasAnimateOut);
 		Log.debug(`${module.identifier} Force remove animateOut (in show): ${module.hasAnimateOut}`);
@@ -362,7 +273,6 @@ const _showModule = (module, speed, callback, options = {}) => {
 
 	module.hidden = false;
 
-	// If forced show, clean current lockStrings.
 	if (module.lockStrings.length !== 0 && options.force === true) {
 		Log.log(`Force show of module: ${module.name}`);
 		module.lockStrings = [];
@@ -372,28 +282,20 @@ const _showModule = (module, speed, callback, options = {}) => {
 	if (moduleWrapper !== null) {
 		clearTimeout(module.showHideTimer);
 
-		// haveAnimateName for verify if we are using AnimateCSS library
-		// we check AnimateCSSIn Array for validate it
-		// and finally return the animate name or `null` (for default MM² animation)
 		let haveAnimateName = null;
-		// check if have valid animateOut in module definition (module.data.animateIn)
 		if (module.data.animateIn && AnimateCSSIn.indexOf(module.data.animateIn) !== -1) haveAnimateName = module.data.animateIn;
-		// can't be override with options.animate
 		else if (options.animate && AnimateCSSIn.indexOf(options.animate) !== -1) haveAnimateName = options.animate;
 
 		if (!haveAnimateName) moduleWrapper.style.transition = `opacity ${speed / 1000}s`;
-		// Restore the position. See _hideModule() for more info.
 		moduleWrapper.style.position = "static";
 		moduleWrapper.classList.remove("hidden");
 
 		updateWrapperStates();
 
-		// Waiting for DOM-changes done in updateWrapperStates before we can start the animation.
 		void moduleWrapper.parentElement.parentElement.offsetHeight;
 		moduleWrapper.style.opacity = 1;
 
 		if (haveAnimateName) {
-			// with AnimateCSS
 			Log.debug(`${module.identifier} Has animateIn: ${haveAnimateName}`);
 			module.hasAnimateIn = haveAnimateName;
 			addAnimateCSS(module.identifier, haveAnimateName, speed / 1000);
@@ -406,7 +308,6 @@ const _showModule = (module, speed, callback, options = {}) => {
 				}
 			}, speed);
 		} else {
-			// default MM² Animate
 			module.showHideTimer = setTimeout(() => {
 				if (typeof callback === "function") {
 					callback();
@@ -414,24 +315,12 @@ const _showModule = (module, speed, callback, options = {}) => {
 			}, speed);
 		}
 	} else {
-		// invoke callback
 		if (typeof callback === "function") {
 			callback();
 		}
 	}
 };
 
-/**
- * Checks for all positions if it has visible content.
- * If not, if will hide the position to prevent unwanted margins.
- * This method should be called by the show and hide methods.
- *
- * Example:
- * If the top_bar only contains the update notification. And no update is available,
- * the update notification is hidden. The top bar still occupies space making for
- * an ugly top margin. By using this function, the top bar will be hidden if the
- * update notification is not visible.
- */
 const updateWrapperStates = () => {
 	globalThis.modulePositions.forEach((position) => {
 		const wrapper = selectWrapper(position);
@@ -444,15 +333,10 @@ const updateWrapperStates = () => {
 			}
 		});
 
-		// move container definitions to main CSS
 		wrapper.className = showWrapper ? "container" : "container hidden";
 	});
 };
 
-/**
- * Loads the core config from the server (already combined with the system defaults).
- * @returns {Promise<object>} The loaded config.
- */
 const loadConfig = async () => {
 	const basePath = globalThis.config?.basePath ?? "/";
 	const res = await fetch(new URL("config/", `${location.origin}${basePath}`));
@@ -460,9 +344,6 @@ const loadConfig = async () => {
 		throw new Error(`Unable to retrieve config: server responded with HTTP ${res.status} ${res.statusText}.`);
 	}
 
-	// The server tags functions as { __mmFunction: "<source>" } because
-	// JSON.stringify can't serialise live functions. This reviver turns
-	// those tagged objects back into callable functions.
 	const config = JSON.parse(await res.text(), (key, value) => {
 		if (value && typeof value === "object" && typeof value.__mmFunction === "string") {
 			try {
@@ -477,36 +358,16 @@ const loadConfig = async () => {
 	return config;
 };
 
-/**
- * Adds special selectors on a collection of modules.
- * @param {Module[]} modules Array of modules.
- */
 const setSelectionMethodsForModules = (modules) => {
 
-	/**
-	 * Filter modules with the specified classes.
-	 * @param {string|string[]} className one or multiple classnames (array or space divided).
-	 * @returns {Module[]} Filtered collection of modules.
-	 */
 	const withClass = (className) => {
 		return modulesByClass(className, true);
 	};
 
-	/**
-	 * Filter modules without the specified classes.
-	 * @param {string|string[]} className one or multiple classnames (array or space divided).
-	 * @returns {Module[]} Filtered collection of modules.
-	 */
 	const exceptWithClass = (className) => {
 		return modulesByClass(className, false);
 	};
 
-	/**
-	 * Filters a collection of modules based on classname(s).
-	 * @param {string|string[]} className one or multiple classnames (array or space divided).
-	 * @param {boolean} include if the filter should include or exclude the modules with the specific classes.
-	 * @returns {Module[]} Filtered collection of modules.
-	 */
 	const modulesByClass = (className, include) => {
 		let searchClasses = className;
 		if (typeof className === "string") {
@@ -529,11 +390,6 @@ const setSelectionMethodsForModules = (modules) => {
 		return newModules;
 	};
 
-	/**
-	 * Removes a module instance from the collection.
-	 * @param {object} module The module instance to remove from the collection.
-	 * @returns {Module[]} Filtered collection of modules.
-	 */
 	const exceptModule = (module) => {
 		const newModules = modules.filter((mod) => {
 			return mod.identifier !== module.identifier;
@@ -543,10 +399,6 @@ const setSelectionMethodsForModules = (modules) => {
 		return newModules;
 	};
 
-	/**
-	 * Walks thru a collection of modules and executes the callback with the module as an argument.
-	 * @param {module} callback The function to execute with the module as an argument.
-	 */
 	const enumerate = (callback) => {
 		modules.map((module) => {
 			callback(module);
@@ -569,11 +421,6 @@ const setSelectionMethodsForModules = (modules) => {
 
 export const MM = {
 
-	/* Public Methods */
-
-	/**
-	 * Main init method.
-	 */
 	async init () {
 		Log.info("Initializing MagicMirror².");
 		const config = await loadConfig();
@@ -582,10 +429,6 @@ export const MM = {
 		await loadModules();
 	},
 
-	/**
-	 * Gets called when all modules are started.
-	 * @param {Module[]} moduleObjects All module instances.
-	 */
 	modulesStarted (moduleObjects) {
 		modules = [];
 		let startUp = "";
@@ -597,7 +440,6 @@ export const MM = {
 
 		createDomObjects();
 
-		// Setup global socket listener for RELOAD event (watch mode)
 		const socket = io("/", {
 			path: `${globalThis.config.basePath || "/"}socket.io`
 		});
@@ -609,8 +451,6 @@ export const MM = {
 
 		if (globalThis.config.reloadAfterServerRestart) {
 			setInterval(async () => {
-				// if server startup time has changed (which means server was restarted)
-				// the client reloads the mm page
 				try {
 					const res = await fetch(`${location.protocol}//${location.host}${globalThis.config.basePath}startup`);
 					const curr = await res.text();
@@ -627,12 +467,6 @@ export const MM = {
 		}
 	},
 
-	/**
-	 * Send a notification to all modules.
-	 * @param {string} notification The identifier of the notification.
-	 * @param {object} payload The payload of the notification.
-	 * @param {Module} sender The module that sent the notification.
-	 */
 	sendNotification (notification, payload, sender) {
 		if (arguments.length < 3) {
 			Log.error("sendNotification: Missing arguments.");
@@ -649,15 +483,9 @@ export const MM = {
 			return;
 		}
 
-		// Further implementation is done in the private method.
 		_sendNotification(notification, payload, sender);
 	},
 
-	/**
-	 * Update the dom for a specific module.
-	 * @param {Module} module The module that needs an update.
-	 * @param {object|number} [updateOptions] The (optional) number of microseconds for the animation or object with updateOptions (speed/animates)
-	 */
 	async updateDom (module, updateOptions) {
 		if (!(module instanceof Module)) {
 			Log.error("updateDom: Sender should be a module.");
@@ -669,50 +497,27 @@ export const MM = {
 			return;
 		}
 
-		// Further implementation is done in the private method.
 		await _updateDom(module, updateOptions);
-		// Once the update is complete and rendered, send a notification to the module that the DOM has been updated
 		_sendNotification("MODULE_DOM_UPDATED", null, null, module);
 	},
 
-	/**
-	 * Returns a collection of all modules currently active.
-	 * @returns {Module[]} A collection of all modules currently active.
-	 */
 	getModules () {
 		setSelectionMethodsForModules(modules);
 		return modules;
 	},
 
-	/**
-	 * Hide the module.
-	 * @param {Module} module The module to hide.
-	 * @param {number} speed The speed of the hide animation.
-	 * @param {() => void} callback Called when the animation is done.
-	 * @param {object} [options] Optional settings for the hide method.
-	 */
 	hideModule (module, speed, callback, options) {
 		module.hidden = true;
 		_hideModule(module, speed, callback, options);
 	},
 
-	/**
-	 * Show the module.
-	 * @param {Module} module The module to show.
-	 * @param {number} speed The speed of the show animation.
-	 * @param {() => void} callback Called when the animation is done.
-	 * @param {object} [options] Optional settings for the show method.
-	 */
 	showModule (module, speed, callback, options) {
-		// do not change module.hidden yet, only if we really show it later
 		_showModule(module, speed, callback, options);
 	},
 
-	// Return all available module positions.
 	getAvailableModulePositions: globalThis.modulePositions
 };
 
-// Legacy global bridge for third-party modules that reference window.MM directly.
 if (!globalThis.MM) globalThis.MM = MM;
 
 try {

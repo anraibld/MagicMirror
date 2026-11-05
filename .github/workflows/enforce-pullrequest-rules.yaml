@@ -1,5 +1,3 @@
-# This workflow enforces on every pull request that the PR is not based against master,
-# taken from https://github.com/oppia/oppia-android/blob/develop/.github/workflows/static_checks.yml
 
 name: "Enforce Pull-Request Rules"
 

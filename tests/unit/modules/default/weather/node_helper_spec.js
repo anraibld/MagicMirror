@@ -1,10 +1,6 @@
 import Module from "node:module";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-/**
- * Creates a fresh weather node helper instance with isolated mocks.
- * @returns {Promise<object>} The mocked weather node helper.
- */
 const loadWeatherNodeHelper = async () => {
 	vi.resetModules();
 

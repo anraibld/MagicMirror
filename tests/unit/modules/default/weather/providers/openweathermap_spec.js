@@ -1,8 +1,3 @@
-/**
- * OpenWeatherMap Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
@@ -136,7 +131,6 @@ describe("OpenWeatherMapProvider", () => {
 
 			const result = await dataPromise;
 
-			// Real data has no precipitation
 			expect(result.rain).toBeUndefined();
 			expect(result.snow).toBeUndefined();
 		});
@@ -355,13 +349,9 @@ describe("OpenWeatherMapProvider", () => {
 
 			const result = await dataPromise;
 
-			// Day 1: temp_min values: -1.5, -1.5, -1.0, 0.5, 1.5, 1.0, 0.5, -0.5 → min=-1.5
 			expect(result[0].minTemperature).toBe(-1.5);
-			// Day 1: temp_max values: -0.5, -0.9, 0.0, 1.5, 2.5, 2.0, 1.2, 0.1 → max=2.5
 			expect(result[0].maxTemperature).toBe(2.5);
-			// Day 2: temp_min values: 0.0, 0.5, 1.5, 3.0, 4.5, 4.0, 2.5, 1.0 → min=0.0
 			expect(result[1].minTemperature).toBe(0.0);
-			// Day 2: temp_max values: 1.0, 1.5, 2.5, 4.0, 5.5, 5.0, 3.5, 2.0 → max=5.5
 			expect(result[1].maxTemperature).toBe(5.5);
 		});
 
@@ -390,9 +380,7 @@ describe("OpenWeatherMapProvider", () => {
 
 			const result = await dataPromise;
 
-			// Day 1 daytime entries have icon "10d" → "rain"
 			expect(result[0].weatherType).toBe("rain");
-			// Day 2 daytime entries have icon "09d" → "showers"
 			expect(result[1].weatherType).toBe("showers");
 		});
 
@@ -421,10 +409,8 @@ describe("OpenWeatherMapProvider", () => {
 
 			const result = await dataPromise;
 
-			// Day 1: two rain entries of 0.6 each = 1.2
 			expect(result[0].rain).toBeCloseTo(1.2);
 			expect(result[0].precipitationAmount).toBeCloseTo(1.2);
-			// Day 2: one snow entry of 0.5
 			expect(result[1].snow).toBeCloseTo(0.5);
 			expect(result[1].precipitationAmount).toBeCloseTo(0.5);
 		});
@@ -543,10 +529,8 @@ describe("OpenWeatherMapProvider", () => {
 
 			const result = await dataPromise;
 
-			// Entry at index 3 has rain: { "3h": 0.6 }
 			expect(result[3].rain).toBe(0.6);
 			expect(result[3].precipitationAmount).toBe(0.6);
-			// Entry at index 11 has snow: { "3h": 0.5 }
 			expect(result[11].snow).toBe(0.5);
 			expect(result[11].precipitationAmount).toBe(0.5);
 		});

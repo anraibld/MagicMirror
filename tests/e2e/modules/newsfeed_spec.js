@@ -152,13 +152,6 @@ describe("Newsfeed module > Notifications", () => {
 		await helpers.stopApplication();
 	});
 
-	/**
-	 * Helper: call notificationReceived on the newsfeed module directly.
-	 * @param {object} p - playwright page
-	 * @param {string} notification - notification name
-	 * @param {object} payload - notification payload
-	 * @returns {Promise<void>} resolves when the notification has been dispatched
-	 */
 	const notify = (p, notification, payload = {}) => p.evaluate(
 		({ n, pl }) => {
 			const nf = MM.getModules().find((m) => m.name === "newsfeed");
@@ -181,7 +174,6 @@ describe("Newsfeed module > Notifications", () => {
 	});
 
 	it("ARTICLE_PREVIOUS should return to the previous article", async () => {
-		// Start at article 0, go to article 1, then back
 		await page.evaluate(() => {
 			const nf = MM.getModules().find((m) => m.name === "newsfeed");
 			nf.activeItem = 0;
@@ -199,7 +191,6 @@ describe("Newsfeed module > Notifications", () => {
 	});
 
 	it("ARTICLE_NEXT should wrap around from the last article to the first", async () => {
-		// Jump to the last article
 		await page.evaluate(() => {
 			const nf = MM.getModules().find((m) => m.name === "newsfeed");
 			nf.activeItem = nf.newsItems.length - 1;
@@ -212,7 +203,6 @@ describe("Newsfeed module > Notifications", () => {
 		await notify(page, "ARTICLE_NEXT");
 		await expect(page.locator(".newsfeed .newsfeed-title")).not.toContainText(titleLast.trim());
 
-		// activeItem should now be 0
 		const activeItem = await page.evaluate(() => MM.getModules().find((m) => m.name === "newsfeed").activeItem);
 		expect(activeItem).toBe(0);
 	});
@@ -261,13 +251,11 @@ describe("Newsfeed module > Notifications", () => {
 		expect(info).toHaveProperty("url");
 		expect(info.title).toBe("QPanel 0.13.0");
 		expect(info.source).toBe("Rodrigo Ramirez Blog");
-		// URL must be the raw article URL, not a CORS proxy URL
 		expect(info.url).toMatch(/^https?:\/\//);
 		expect(info.url).not.toContain("localhost");
 	});
 
 	it("ARTICLE_LESS_DETAILS should reset the full article view", async () => {
-		// Simulate full article view being active
 		await page.evaluate(() => {
 			const nf = MM.getModules().find((m) => m.name === "newsfeed");
 			nf.config.showFullArticle = true;
@@ -282,7 +270,6 @@ describe("Newsfeed module > Notifications", () => {
 			return { showFullArticle: nf.config.showFullArticle };
 		});
 		expect(state.showFullArticle).toBe(false);
-		// Normal newsfeed title should be visible again
 		await expect(page.locator(".newsfeed .newsfeed-title")).toBeVisible();
 	});
 });

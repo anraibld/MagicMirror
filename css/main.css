@@ -43,10 +43,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/**
- * Default styles.
- */
-
 .dimmed {
   color: var(--color-text-dimmed);
 }
@@ -130,10 +126,6 @@ sup {
   line-height: 50%;
 }
 
-/**
- * Module styles.
- */
-
 .module {
   margin-bottom: var(--gap-modules);
 }
@@ -160,10 +152,6 @@ sup {
 .pre-line {
   white-space: pre-line;
 }
-
-/**
- * Region Definitions.
- */
 
 .region {
   position: absolute;
@@ -239,10 +227,6 @@ sup {
   border-spacing: 0;
   border-collapse: separate;
 }
-
-/**
- * Container Definitions.
- */
 
 .region .container {
   display: flex;

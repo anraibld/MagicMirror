@@ -96,7 +96,6 @@ describe("HTTPFetcher", () => {
 		it("should emit error event on timeout", async () => {
 			server.use(
 				http.get(TEST_URL, async () => {
-					// Simulate a slow server that never responds
 					await new Promise((resolve) => setTimeout(resolve, 60000));
 					return HttpResponse.text("too late");
 				})
@@ -249,7 +248,6 @@ describe("HTTPFetcher", () => {
 				fetcher.startPeriodicFetch();
 				const errorInfo = await errorPromise;
 
-				// 300 seconds = 300000 ms
 				expect(errorInfo.retryAfter).toBe(300000);
 			});
 		});
@@ -437,14 +435,12 @@ describe("Timer management", () => {
 		fetcher.startPeriodicFetch();
 		await responsePromise;
 
-		// Timer should NOT be set in test mode (mmTestMode=true)
 		expect(fetcher.reloadTimer).toBeNull();
 	});
 
 	it("should clear timer when clearTimer is called", () => {
 		fetcher = new HTTPFetcher({ url: TEST_URL, reloadInterval: 100 });
 
-		// Manually set a timer to test clearing
 		fetcher.reloadTimer = setTimeout(() => {}, 10000);
 		expect(fetcher.reloadTimer).not.toBeNull();
 
@@ -600,17 +596,13 @@ describe("Retry exhaustion fallback", () => {
 		const errors = [];
 		fetcher.on("error", (errorInfo) => errors.push(errorInfo));
 
-		// Trigger maxRetries + 1 fetches to reach exhaustion
 		for (let i = 0; i < 4; i++) {
 			await fetcher.fetch();
 		}
 
-		// First retries should use backoff (< reloadInterval)
 		expect(errors[0].retryAfter).toBe(15000);
 		expect(errors[1].retryAfter).toBe(30000);
-		// Third retry hits maxRetries, should fall back to reloadInterval
 		expect(errors[2].retryAfter).toBe(300000);
-		// Subsequent errors stay at reloadInterval
 		expect(errors[3].retryAfter).toBe(300000);
 	});
 
@@ -630,12 +622,9 @@ describe("Retry exhaustion fallback", () => {
 			await fetcher.fetch();
 		}
 
-		// First retries should use backoff (< reloadInterval)
 		expect(errors[0].retryAfter).toBe(15000);
 		expect(errors[1].retryAfter).toBe(30000);
-		// Third retry hits maxRetries, should fall back to reloadInterval
 		expect(errors[2].retryAfter).toBe(300000);
-		// Subsequent errors stay at reloadInterval
 		expect(errors[3].retryAfter).toBe(300000);
 	});
 
@@ -654,14 +643,12 @@ describe("Retry exhaustion fallback", () => {
 		const errors = [];
 		fetcher.on("error", (errorInfo) => errors.push(errorInfo));
 
-		// Two failures with backoff
 		await fetcher.fetch();
 		await fetcher.fetch();
 		expect(errors).toHaveLength(2);
 		expect(errors[0].retryAfter).toBe(15000);
 		expect(errors[1].retryAfter).toBe(30000);
 
-		// Success resets counter
 		await fetcher.fetch();
 		expect(fetcher.networkErrorCount).toBe(0);
 	});

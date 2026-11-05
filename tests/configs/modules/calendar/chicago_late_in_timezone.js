@@ -18,7 +18,6 @@ const config = {
 				calendars: [
 					{
 						maximumEntries: 100,
-						//url: "http://localhost:8080/tests/mocks/chicago_late_in_timezone.ics"
 						url: "http://localhost:8080/tests/mocks/chicago_late_in_timezone.ics"
 					}
 				]
@@ -27,7 +26,6 @@ const config = {
 	]
 };
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = config;
 }

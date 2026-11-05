@@ -6,13 +6,8 @@ const { getUserAgent } = require("#server_functions");
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 const THIRTY_MINUTES = 30 * 60 * 1000;
 const MAX_SERVER_BACKOFF = 3;
-const DEFAULT_TIMEOUT = 30000; // 30 seconds
+const DEFAULT_TIMEOUT = 30000;
 
-/**
- * Maps errorType to MagicMirror translation keys.
- * This allows HTTPFetcher to provide ready-to-use translation keys,
- * eliminating the need to call NodeHelper.checkFetchError().
- */
 const ERROR_TYPE_TO_TRANSLATION = {
 	AUTH_FAILURE: "MODULE_ERROR_UNAUTHORIZED",
 	ACCESS_DENIED: "MODULE_ERROR_UNAUTHORIZED",
@@ -23,59 +18,12 @@ const ERROR_TYPE_TO_TRANSLATION = {
 	UNKNOWN_ERROR: "MODULE_ERROR_UNSPECIFIED"
 };
 
-/**
- * HTTPFetcher - Centralized HTTP fetching with intelligent error handling
- *
- * Features:
- * - Automatic retry strategies based on HTTP status codes
- * - Exponential backoff for server errors
- * - Retry-After header parsing for rate limiting
- * - Authentication support (Basic, Bearer)
- * - Self-signed certificate support
- * @augments EventEmitter
- * @fires HTTPFetcher#response - When fetch succeeds (including 304 Not Modified)
- * @fires HTTPFetcher#error - When fetch fails or returns non-ok response
- * @example
- * const fetcher = new HTTPFetcher({ url, reloadInterval: 60000 });
- * fetcher.on('response', (response) => { ... });
- * fetcher.on('error', (errorInfo) => { ... });
- * fetcher.startPeriodicFetch();
- */
 class HTTPFetcher extends EventEmitter {
 
-	/**
-	 * Calculates exponential backoff delay for retries
-	 * @param {number} attempt - Attempt number (1-based)
-	 * @param {object} options - Configuration options
-	 * @param {number} [options.baseDelay] - Initial delay in ms (default: 15s)
-	 * @param {number} [options.maxDelay] - Maximum delay in ms (default: 5min)
-	 * @returns {number} Delay in milliseconds
-	 * @example
-	 * HTTPFetcher.calculateBackoffDelay(1) // 15000 (15s)
-	 * HTTPFetcher.calculateBackoffDelay(2) // 30000 (30s)
-	 * HTTPFetcher.calculateBackoffDelay(3) // 60000 (60s)
-	 * HTTPFetcher.calculateBackoffDelay(6) // 300000 (5min, capped)
-	 */
 	static calculateBackoffDelay (attempt, { baseDelay = 15000, maxDelay = 300000 } = {}) {
 		return Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
 	}
 
-	/**
-	 * Creates a new HTTPFetcher instance
-	 * @param {object} options - Configuration options
-	 * @param {string} [options.url] - The static URL to fetch
-	 * @param {() => string} [options.urlFactory] - Function that returns the URL for each request
-	 * @param {number} [options.reloadInterval] - Time in ms between fetches (default: 5 min)
-	 * @param {object} [options.auth] - Authentication options
-	 * @param {string} [options.auth.method] - 'basic' or 'bearer'
-	 * @param {string} [options.auth.user] - Username for basic auth
-	 * @param {string} [options.auth.pass] - Password or token
-	 * @param {boolean} [options.selfSignedCert] - Accept self-signed certificates
-	 * @param {object} [options.headers] - Additional headers to send
-	 * @param {number} [options.maxRetries] - Max retries for 5xx errors (default: 3)
-	 * @param {number} [options.timeout] - Request timeout in ms (default: 30000)
-	 * @param {string} [options.logContext] - Optional context for log messages (e.g., provider name)
-	 */
 	constructor (options = {}) {
 		super();
 
@@ -97,9 +45,6 @@ class HTTPFetcher extends EventEmitter {
 		this.networkErrorCount = 0;
 	}
 
-	/**
-	 * Clears any pending reload timer
-	 */
 	clearTimer () {
 		if (this.reloadTimer) {
 			clearTimeout(this.reloadTimer);
@@ -107,23 +52,13 @@ class HTTPFetcher extends EventEmitter {
 		}
 	}
 
-	/**
-	 * Schedules the next fetch.
-	 * If no delay is provided, uses reloadInterval.
-	 * If delay is provided but very short (< 1 second), clamps to reloadInterval
-	 * to prevent hammering servers.
-	 * @param {number} [delay] - Delay in milliseconds
-	 */
 	scheduleNextFetch (delay) {
 		let nextDelay = delay ?? this.reloadInterval;
 
-		// Only clamp if delay is unreasonably short (< 1 second)
-		// This allows respecting Retry-After headers while preventing abuse
 		if (nextDelay < 1000) {
 			nextDelay = this.reloadInterval;
 		}
 
-		// Don't schedule in test mode
 		if (process.env.mmTestMode === "true") {
 			return;
 		}
@@ -131,10 +66,6 @@ class HTTPFetcher extends EventEmitter {
 		this.reloadTimer = setTimeout(() => this.fetch(), nextDelay);
 	}
 
-	/**
-	 * Starts periodic fetching
-	 * @param {number} [initialDelay] - Delay before the first fetch in ms
-	 */
 	startPeriodicFetch (initialDelay = 0) {
 		this.clearTimer();
 
@@ -145,10 +76,6 @@ class HTTPFetcher extends EventEmitter {
 		}
 	}
 
-	/**
-	 * Builds the options object for fetch
-	 * @returns {object} Options object containing headers (and dispatcher if needed)
-	 */
 	getRequestOptions () {
 		const headers = {
 			"User-Agent": getUserAgent(),
@@ -175,19 +102,12 @@ class HTTPFetcher extends EventEmitter {
 		return options;
 	}
 
-	/**
-	 * Parses the Retry-After header value
-	 * @param {string} retryAfter - The Retry-After header value
-	 * @returns {number|null} Milliseconds to wait or null if parsing failed
-	 */
 	#parseRetryAfter (retryAfter) {
-		// Try parsing as seconds
 		const seconds = Number(retryAfter);
 		if (!Number.isNaN(seconds) && seconds >= 0) {
 			return seconds * 1000;
 		}
 
-		// Try parsing as HTTP-date
 		const retryDate = Date.parse(retryAfter);
 		if (!Number.isNaN(retryDate)) {
 			return Math.max(0, retryDate - Date.now());
@@ -196,20 +116,10 @@ class HTTPFetcher extends EventEmitter {
 		return null;
 	}
 
-	/**
-	 * Resolves the URL for the current request.
-	 * Uses urlFactory when configured, otherwise the static URL.
-	 * @returns {string} URL to use for the request.
-	 */
 	#resolveUrl () {
 		return this.urlFactory ? this.urlFactory() : this.url;
 	}
 
-	/**
-	 * Returns a shortened version of the URL for log messages.
-	 * @param {string} url - Resolved URL used for the request
-	 * @returns {string} Shortened URL
-	 */
 	#shortenUrl (url) {
 		if (!url) return "(unknown URL)";
 
@@ -221,12 +131,6 @@ class HTTPFetcher extends EventEmitter {
 		}
 	}
 
-	/**
-	 * Determines the retry delay for a non-ok response
-	 * @param {Response} response - The fetch Response object
-	 * @param {string} url - Resolved URL used for the request
-	 * @returns {{delay: number, errorInfo: object}} Computed retry delay and error info
-	 */
 	#getDelayForResponse (response, url) {
 		const { status } = response;
 		let delay = this.reloadInterval;
@@ -285,16 +189,6 @@ class HTTPFetcher extends EventEmitter {
 		};
 	}
 
-	/**
-	 * Creates a standardized error info object
-	 * @param {string} message - Error message
-	 * @param {number|null} status - HTTP status code or null for network errors
-	 * @param {string} errorType - Error type: AUTH_FAILURE, ACCESS_DENIED, RATE_LIMITED, SERVER_ERROR, CLIENT_ERROR, NETWORK_ERROR
-	 * @param {number} retryAfter - Delay until next retry in ms
-	 * @param {Error} [originalError] - The original error if any
-	 * @param {string} [url] - Resolved URL used for the request
-	 * @returns {object} Error info object with translationKey for direct use
-	 */
 	#createErrorInfo (message, status, errorType, retryAfter, originalError = null, url = this.url) {
 		return {
 			message,
@@ -308,11 +202,6 @@ class HTTPFetcher extends EventEmitter {
 		};
 	}
 
-	/**
-	 * Performs the HTTP fetch and emits appropriate events
-	 * @fires HTTPFetcher#response
-	 * @fires HTTPFetcher#error
-	 */
 	async fetch () {
 		this.clearTimer();
 
@@ -323,9 +212,6 @@ class HTTPFetcher extends EventEmitter {
 
 		try {
 			const requestOptions = this.getRequestOptions();
-			// Use undici.fetch when a custom dispatcher is present (e.g. selfSignedCert),
-			// because Node's global fetch and npm undici@8 Agents are incompatible.
-			// For regular requests, use globalThis.fetch so MSW and other interceptors work.
 			const fetchFn = requestOptions.dispatcher ? undiciFetch : globalThis.fetch;
 			requestUrl = this.#resolveUrl();
 
@@ -337,16 +223,9 @@ class HTTPFetcher extends EventEmitter {
 			const isSuccessfulResponse = response.ok || response.status === 304;
 
 			if (isSuccessfulResponse) {
-				// Reset error counts on success
 				this.serverErrorCount = 0;
 				this.networkErrorCount = 0;
 
-				/**
-				 * Response event - fired when fetch succeeds (including 304)
-				 * @event HTTPFetcher#response
-				 * @type {Response}
-				 * @param {string} requestUrl - The URL that was actually requested (resolved from urlFactory/url)
-				 */
 				this.emit("response", response, requestUrl);
 			} else {
 				const { delay, errorInfo } = this.#getDelayForResponse(response, requestUrl);

@@ -1,30 +1,13 @@
 import {defineConfig} from "vitest/config";
 
-/*
- * Sequential execution keeps our shared test server stable:
- * - All suites bind to port 8080
- * - Fixtures and temp paths are reused between tests
- * - Debugging becomes predictable
- *
- * Parallel execution would require dynamic ports and isolated fixtures,
- * so we intentionally cap Vitest at a single worker for now.
- *
- * Projects separate unit, e2e (Playwright), and electron tests with
- * appropriate timeouts for each test type.
- */
-
 export default defineConfig({
 	test: {
-		// Shared settings for all test types
 		globals: true,
 		environment: "node",
 		setupFiles: ["./tests/utils/vitest-setup.js"],
-		// Stop test execution on first failure
 		bail: 3,
-		// Automatically restore all mocks after each test to prevent leaks
 		restoreAllMocks: true,
 
-		// Shared exclude patterns
 		exclude: [
 			"**/node_modules/**",
 			"**/dist/**",
@@ -37,7 +20,6 @@ export default defineConfig({
 			"tests/utils/**"
 		],
 
-		// Projects with specific configurations per test type
 		projects: [
 			{
 				test: {
@@ -77,7 +59,6 @@ export default defineConfig({
 			}
 		],
 
-		// Coverage configuration
 		coverage: {
 			provider: "v8",
 			reporter: ["lcov", "text"],
@@ -94,10 +75,6 @@ export default defineConfig({
 			]
 		},
 
-		/*
-		 * Pool settings for isolated test execution. Keep maxWorkers at 1 so
-		 * port 8080 and shared fixtures remain safe across the full suite.
-		 */
 		pool: "forks",
 		maxWorkers: 1,
 		isolate: true

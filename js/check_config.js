@@ -1,4 +1,3 @@
-// Ensure internal require aliases (e.g., "logger") resolve when this file is run as a standalone script
 require("./alias-resolver");
 
 const path = require("node:path");

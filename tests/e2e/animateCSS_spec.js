@@ -1,46 +1,27 @@
 const { expect } = require("playwright/test");
 const helpers = require("./helpers/global-setup");
 
-// Validate Animate.css integration for compliments module using class toggling.
-// We intentionally ignore computed animation styles (jsdom doesn't simulate real animations).
 describe("AnimateCSS integration Test", () => {
 	let page;
 
-	// Config variants under test
 	const TEST_CONFIG_ANIM = "tests/configs/modules/compliments/compliments_animateCSS.js";
-	const TEST_CONFIG_FALLBACK = "tests/configs/modules/compliments/compliments_animateCSS_fallbackToDefault.js"; // invalid animation names
-	const TEST_CONFIG_INVERTED = "tests/configs/modules/compliments/compliments_animateCSS_invertedAnimationName.js"; // in/out swapped
-	const TEST_CONFIG_NONE = "tests/configs/modules/compliments/compliments_anytime.js"; // no animations defined
+	const TEST_CONFIG_FALLBACK = "tests/configs/modules/compliments/compliments_animateCSS_fallbackToDefault.js";
+	const TEST_CONFIG_INVERTED = "tests/configs/modules/compliments/compliments_animateCSS_invertedAnimationName.js";
+	const TEST_CONFIG_NONE = "tests/configs/modules/compliments/compliments_anytime.js";
 
-	/**
-	 * Get the compliments container element (waits until available).
-	 * @returns {Promise<void>}
-	 */
 	const getComplimentsElement = async () => {
 		await helpers.getDocument();
 		page = helpers.getPage();
 		await expect(page.locator(".compliments")).toBeVisible();
 	};
 
-	/**
-	 * Wait for an Animate.css class to appear and persist briefly.
-	 * @param {string} cls Animation class name without leading dot (e.g. animate__flipInX)
-	 * @param {{timeout?: number}} [options] Poll timeout in ms (default 6000)
-	 * @returns {Promise<void>}
-	 */
 	const waitForAnimationClass = async (cls, { timeout = 6000 } = {}) => {
 		const locator = page.locator(`.compliments.animate__animated.${cls}`);
 		await locator.waitFor({ state: "attached", timeout });
-		// small stability wait
 		await new Promise((r) => setTimeout(r, 50));
 		await expect(locator).toBeAttached();
 	};
 
-	/**
-	 * Assert that no Animate.css animation class is applied within a time window.
-	 * @param {number} [ms] Observation period in ms (default 2000)
-	 * @returns {Promise<void>}
-	 */
 	const assertNoAnimationWithin = async (ms = 2000) => {
 		const start = Date.now();
 		const locator = page.locator(".compliments.animate__animated");
@@ -53,12 +34,6 @@ describe("AnimateCSS integration Test", () => {
 		}
 	};
 
-	/**
-	 * Run one animation test scenario.
-	 * @param {string} [animationIn] Expected animate-in name
-	 * @param {string} [animationOut] Expected animate-out name
-	 * @returns {Promise<void>} Throws on assertion failure
-	 */
 	const runAnimationTest = async (animationIn, animationOut) => {
 		await getComplimentsElement();
 		if (!animationIn && !animationOut) {
@@ -67,7 +42,6 @@ describe("AnimateCSS integration Test", () => {
 		}
 		if (animationIn) await waitForAnimationClass(`animate__${animationIn}`);
 		if (animationOut) {
-			// Wait just beyond one update cycle (updateInterval=2000ms) before expecting animateOut.
 			await new Promise((r) => setTimeout(r, 2100));
 			await waitForAnimationClass(`animate__${animationOut}`);
 		}

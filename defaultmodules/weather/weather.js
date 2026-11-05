@@ -1,21 +1,19 @@
-/* global WeatherUtils, WeatherObject, formatTime */
 
 Module.register("weather", {
-	// Default module config.
 	defaults: {
 		weatherProvider: "openweathermap",
 		roundTemp: false,
-		type: "current", // current, forecast, daily (equivalent to forecast), hourly
+		type: "current",
 		lang: globalThis.config.language,
 		units: globalThis.config.units,
 		tempUnits: globalThis.config.units,
 		windUnits: globalThis.config.units,
 		timeFormat: globalThis.config.timeFormat,
-		updateInterval: 10 * 60 * 1000, // every 10 minutes
+		updateInterval: 10 * 60 * 1000,
 		animationSpeed: 1000,
 		showFeelsLike: true,
-		showHumidity: "none", // possible options for "current" weather are "none", "wind", "temp", "feelslike" or "below", for "hourly" weather "none" or "true"
-		hideZeroes: false, // hide zeroes (and empty columns) in hourly, currently only for precipitation
+		showHumidity: "none",
+		hideZeroes: false,
 		showIndoorHumidity: false,
 		showIndoorTemperature: false,
 		allowOverrideNotification: false,
@@ -33,28 +31,26 @@ Module.register("weather", {
 		maxEntries: 5,
 		ignoreToday: false,
 		fade: true,
-		fadePoint: 0.25, // Start on 1/4th of the list.
-		initialLoadDelay: 0, // 0 seconds delay
+		fadePoint: 0.25,
+		initialLoadDelay: 0,
 		appendLocationNameToHeader: true,
 		calendarClass: "calendar",
 		tableClass: "small",
 		onlyTemp: false,
 		colored: false,
 		absoluteDates: false,
-		forecastDateFormat: "ddd", // format for forecast date display, e.g., "ddd" = Mon, "dddd" = Monday, "D MMM" = 18 Oct
+		forecastDateFormat: "ddd",
 		hourlyForecastIncrements: 1,
 		themeDir: "",
 		themeCustomScripts: []
 	},
 
-	// Module properties (all providers run server-side)
 	instanceId: null,
 	fetchedLocationName: null,
 	currentWeatherObject: null,
 	weatherForecastArray: null,
 	weatherHourlyArray: null,
 
-	// Can be used by the provider to display location of event if nothing else is specified
 	firstEvent: null,
 
 	getThemeDir () {
@@ -66,15 +62,11 @@ Module.register("weather", {
 		}
 	},
 
-	// Define required scripts.
 	getStyles () {
 		return ["font-awesome.css", "weather-icons.css", `${this.getThemeDir()}weather.css`];
 	},
 
-	// Return the scripts that are necessary for the weather module.
 	getScripts () {
-		// Only load client-side dependencies for rendering
-		// All providers run server-side via node_helper
 		const resArr = ["moment.js", "weatherutils.js", "weatherobject.js", "suncalc.js"];
 		this.config.themeCustomScripts.forEach((element) => {
 			resArr.push(`${this.getThemeDir()}${element}`);
@@ -82,7 +74,6 @@ Module.register("weather", {
 		return resArr;
 	},
 
-	// Override getHeader method.
 	getHeader () {
 		if (this.config.appendLocationNameToHeader) {
 			const locationName = this.fetchedLocationName || "";
@@ -94,7 +85,6 @@ Module.register("weather", {
 		return this.data.header ? this.data.header : "";
 	},
 
-	// Start the weather module.
 	start () {
 		moment.locale(this.config.lang);
 
@@ -110,7 +100,6 @@ Module.register("weather", {
 			this.config.showHumidity = this.config.showHumidity ? "wind" : "none";
 		}
 
-		// All providers run server-side: use stable identifier so reconnects don't spawn duplicate HTTPFetchers
 		this.instanceId = this.identifier;
 
 		if (window.initWeatherTheme) window.initWeatherTheme(this);
@@ -123,13 +112,9 @@ Module.register("weather", {
 			...this.config
 		});
 
-		// Server-driven fetching - no client-side scheduling needed
-
-		// Add custom filters
 		this.addFilters();
 	},
 
-	// Cleanup on module hide/suspend
 	stop () {
 		if (this.instanceId) {
 			this.sendSocketNotification("STOP_WEATHER", {
@@ -138,7 +123,6 @@ Module.register("weather", {
 		}
 	},
 
-	// Override notification handler.
 	notificationReceived (notification, payload, sender) {
 		if (notification === "CALENDAR_EVENTS") {
 			const senderClasses = sender.data.classes.toLowerCase().split(" ");
@@ -159,7 +143,6 @@ Module.register("weather", {
 			this.indoorHumidity = this.roundValue(payload);
 			this.updateDom(300);
 		} else if (notification === "CURRENT_WEATHER_OVERRIDE" && this.config.allowOverrideNotification) {
-			// Override current weather with data from local sensors
 			if (this.currentWeatherObject) {
 				Object.assign(this.currentWeatherObject, payload);
 				this.updateDom(this.config.animationSpeed);
@@ -167,7 +150,6 @@ Module.register("weather", {
 		}
 	},
 
-	// Handle socket notifications from node_helper
 	socketNotificationReceived (notification, payload) {
 		if (payload.instanceId !== this.instanceId) {
 			return;
@@ -177,7 +159,6 @@ Module.register("weather", {
 			Log.log(`[weather] Provider initialized, location: ${payload.locationName}`);
 			this.fetchedLocationName = payload.locationName;
 			this.updateDom();
-			// Server-driven fetching - HTTPFetcher will send WEATHER_DATA automatically
 		} else if (notification === "WEATHER_DATA") {
 			this.handleWeatherData(payload);
 		} else if (notification === "WEATHER_ERROR") {
@@ -192,7 +173,6 @@ Module.register("weather", {
 			return;
 		}
 
-		// Convert plain objects to WeatherObject instances
 		switch (type) {
 			case "current":
 				this.currentWeatherObject = this.createWeatherObject(data);
@@ -216,7 +196,6 @@ Module.register("weather", {
 		const weather = new WeatherObject();
 		Object.assign(weather, {
 			...data,
-			// Convert to moment objects for template compatibility
 			date: data.date ? moment(data.date) : null,
 			sunrise: data.sunrise ? moment(data.sunrise) : null,
 			sunset: data.sunset ? moment(data.sunset) : null
@@ -224,7 +203,6 @@ Module.register("weather", {
 		return weather;
 	},
 
-	// Select the template depending on the display type.
 	getTemplate () {
 		switch (this.config.type.toLowerCase()) {
 			case "current":
@@ -234,18 +212,13 @@ Module.register("weather", {
 			case "daily":
 			case "forecast":
 				return `${this.getThemeDir()}forecast.njk`;
-			//Make the invalid values use the "Loading..." from forecast
 			default:
 				return `${this.getThemeDir()}forecast.njk`;
 		}
 	},
 
-	// Add all the data to the template.
 	getTemplateData () {
 		const now = new Date();
-		// Filter out past entries, but keep the current hour (e.g. show 0:00 at 0:10).
-		// This ensures consistent behavior across all providers, regardless of whether
-		// a provider filters past entries itself.
 		const startOfHour = new Date(now);
 		startOfHour.setMinutes(0, 0, 0);
 		const upcomingHourlyData = this.weatherHourlyArray
@@ -254,7 +227,6 @@ Module.register("weather", {
 
 		const increment = this.config.hourlyForecastIncrements;
 		const keepByConfiguredIncrement = (_entry, index) => {
-			// Keep the existing offset behavior of hourlyForecastIncrements.
 			return (index + 1) % increment === increment - 1;
 		};
 
@@ -272,7 +244,6 @@ Module.register("weather", {
 		};
 	},
 
-	// What to do when the weather provider has new information available?
 	updateAvailable () {
 		Log.log("[weather] New weather information available.");
 		if (window.updateWeatherTheme) {
@@ -311,8 +282,6 @@ Module.register("weather", {
 	getHourlyArray () {
 		return this.weatherHourlyArray;
 	},
-
-	// scheduleUpdate removed - all providers use server-driven fetching via HTTPFetcher
 
 	roundValue (temperature) {
 		if (temperature === null || temperature === undefined) {

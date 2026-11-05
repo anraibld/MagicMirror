@@ -1,6 +1,3 @@
-// see https://playwright.dev/docs/api/class-electronapplication
-// https://github.com/microsoft/playwright/issues/6347#issuecomment-1085850728
-// https://www.anycodings.com/1questions/958135/can-i-set-the-date-for-playwright-browser
 const { _electron: electron } = require("playwright");
 
 exports.startApplication = async (configFilename, systemDate = null, electronParams = [], timezone = "GMT") => {
@@ -13,14 +10,12 @@ exports.startApplication = async (configFilename, systemDate = null, electronPar
 	}
 	process.env.mmTestMode = "true";
 
-	// check environment for DISPLAY or WAYLAND_DISPLAY
 	if (process.env.WAYLAND_DISPLAY) {
 		electronParams.unshift("js/electron.js", "--ozone-platform=wayland");
 	} else {
 		electronParams.unshift("js/electron.js");
 	}
 
-	// Pass environment variables to Electron process
 	const env = {
 		...process.env,
 		MM_CONFIG_FILE: configFilename,
@@ -71,7 +66,6 @@ exports.stopApplication = async (timeout = 10000) => {
 				electronProcess.kill("SIGKILL");
 			}
 		} catch {
-			// Ignore errors caused by Playwright already tearing down the connection
 		}
 	};
 

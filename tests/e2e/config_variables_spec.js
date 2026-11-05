@@ -23,7 +23,7 @@ describe("config with variables and secrets", () => {
 	});
 
 	it("config.timeFormat should be 12", () => {
-		expect(global.config.timeFormat).toBe(12); // default is 24
+		expect(global.config.timeFormat).toBe(12);
 	});
 
 	it("/config endpoint should show redacted secrets", async () => {

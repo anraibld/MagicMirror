@@ -1,11 +1,11 @@
 Module.register("MMM-Kolumbus", {
 	defaults: {
-		stopPlaceId: "NSR:StopPlace:59853", // Stavanger bussterminal
+		stopPlaceId: "NSR:StopPlace:59853",
 		maxDepartures: 8,
 		updateInterval: 60 * 1000,
 		lineFilter: [],
-		modes: [], // f.eks. ["rail"] eller ["bus"]; tom = alle
-		showPlatform: false, // vis spor/plattform (nyttig for tog)
+		modes: [],
+		showPlatform: false,
 		header: ""
 	},
 
@@ -17,7 +17,6 @@ Module.register("MMM-Kolumbus", {
 		this.loaded = false;
 		this.refresh();
 		setInterval(() => this.refresh(), this.config.updateInterval);
-		// re-render each 30s so relative times stay fresh
 		setInterval(() => this.updateDom(), 30 * 1000);
 	},
 

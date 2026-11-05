@@ -14,13 +14,12 @@ const config = {
 						url: "http://localhost:8080/tests/mocks/newsfeed_test.xml"
 					}
 				],
-				updateInterval: 3600 * 1000 // 1 hour - prevent auto-rotation during tests
+				updateInterval: 3600 * 1000
 			}
 		}
 	]
 };
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = config;
 }

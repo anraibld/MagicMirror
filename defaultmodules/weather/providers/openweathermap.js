@@ -2,10 +2,6 @@ const Log = require("logger");
 const weatherUtils = require("../provider-utils");
 const WeatherProvider = require("../weatherprovider");
 
-/**
- * Server-side weather provider for OpenWeatherMap
- * see https://openweathermap.org/
- */
 class OpenWeatherMapProvider extends WeatherProvider {
 	constructor (config) {
 		super();
@@ -25,7 +21,6 @@ class OpenWeatherMapProvider extends WeatherProvider {
 	}
 
 	initialize () {
-		// Validate callbacks exist
 		if (typeof this.onErrorCallback !== "function") {
 			throw new Error("setCallbacks() must be called before initialize()");
 		}
@@ -41,7 +36,6 @@ class OpenWeatherMapProvider extends WeatherProvider {
 
 		this.#initializeFetcher();
 	}
-
 
 	#initializeFetcher () {
 		const url = this.#getUrl();
@@ -59,7 +53,6 @@ class OpenWeatherMapProvider extends WeatherProvider {
 			let weatherData;
 
 			if (this.config.weatherEndpoint === "/onecall") {
-				// One Call API (v3.0)
 				if (data.timezone) {
 					this.locationName = data.timezone;
 				}
@@ -82,10 +75,8 @@ class OpenWeatherMapProvider extends WeatherProvider {
 						throw new Error(`Unknown weather type: ${this.config.type}`);
 				}
 			} else if (this.config.weatherEndpoint === "/weather") {
-				// Current weather endpoint (API v2.5)
 				weatherData = this.#generateWeatherObjectFromCurrentWeather(data);
 			} else if (this.config.weatherEndpoint === "/forecast") {
-				// 3-hourly forecast endpoint (API v2.5)
 				weatherData = this.config.type === "hourly"
 					? this.#generateHourlyWeatherObjectsFromForecast(data)
 					: this.#generateDailyWeatherObjectsFromForecast(data);
@@ -184,7 +175,6 @@ class OpenWeatherMapProvider extends WeatherProvider {
 		const dayMap = new Map();
 
 		for (const forecast of data.list) {
-			// Shift dt by timezone offset so UTC fields represent local time
 			const localDate = new Date((forecast.dt + timezoneOffsetSeconds) * 1000);
 			const dateKey = `${localDate.getUTCFullYear()}-${String(localDate.getUTCMonth() + 1).padStart(2, "0")}-${String(localDate.getUTCDate()).padStart(2, "0")}`;
 
@@ -227,7 +217,6 @@ class OpenWeatherMapProvider extends WeatherProvider {
 	#generateWeatherObjectsFromOnecall (data) {
 		let precip;
 
-		// Get current weather
 		const current = {};
 		if (data.hasOwnProperty("current")) {
 			const timezoneOffset = data.timezone_offset / 60;
@@ -256,7 +245,6 @@ class OpenWeatherMapProvider extends WeatherProvider {
 			current.feelsLikeTemp = data.current.feels_like;
 		}
 
-		// Get hourly weather
 		const hours = [];
 		if (data.hasOwnProperty("hourly")) {
 			const timezoneOffset = data.timezone_offset / 60;
@@ -289,7 +277,6 @@ class OpenWeatherMapProvider extends WeatherProvider {
 			}
 		}
 
-		// Get daily weather
 		const days = [];
 		if (data.hasOwnProperty("daily")) {
 			const timezoneOffset = data.timezone_offset / 60;

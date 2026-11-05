@@ -105,7 +105,6 @@ class PirateweatherProvider extends WeatherProvider {
 			sunset: null
 		};
 
-		// Add sunrise/sunset from daily data if available
 		if (data.daily && data.daily.data && data.daily.data.length > 0) {
 			const today = data.daily.data[0];
 			if (today.sunriseTime) {
@@ -138,10 +137,9 @@ class PirateweatherProvider extends WeatherProvider {
 				precipitationProbability: forecast.precipProbability != null ? parseFloat(forecast.precipProbability) * 100 : null
 			};
 
-			// Handle precipitation
 			let precip = 0;
 			if (forecast.hasOwnProperty("precipAccumulation")) {
-				precip = forecast.precipAccumulation * 10; // cm to mm
+				precip = forecast.precipAccumulation * 10;
 			}
 
 			day.precipitationAmount = precip;
@@ -181,10 +179,9 @@ class PirateweatherProvider extends WeatherProvider {
 				precipitationAmount: 0
 			};
 
-			// Handle precipitation
 			let precip = 0;
 			if (forecast.hasOwnProperty("precipAccumulation")) {
-				precip = forecast.precipAccumulation * 10; // cm to mm
+				precip = forecast.precipAccumulation * 10;
 			}
 
 			hour.precipitationAmount = precip;

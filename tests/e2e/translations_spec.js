@@ -10,10 +10,6 @@ const {
 	resetTranslatorState
 } = require("../utils/translation_test_environment");
 
-/**
- * Create a fresh Translator state for each test.
- * @returns {Promise<object>} Shared Translator singleton with cleared state
- */
 const getFreshTranslator = async () => {
 	setupTranslationTestEnvironment(3000);
 	const { Translator } = await import(TRANSLATOR_MODULE_URL);
@@ -65,7 +61,6 @@ describe("translations", () => {
 			config = { language: "de" };
 			global.config = config;
 
-			// module.js and translator.js are ES modules that read these globals at call time.
 			Translator = await getFreshTranslator();
 
 			const modulePath = pathToFileURL(path.join(__dirname, "..", "..", "js", "module.js")).href;
@@ -145,10 +140,8 @@ describe("translations", () => {
 	describe("same keys", () => {
 		let base;
 
-		// Some expressions are not easy to translate automatically. For the sake of a working test, we filter them out.
 		const COMMON_EXCEPTIONS = ["WEEK_SHORT", "ALERT_TITLE", "ALERT_WELCOME"];
 
-		// Some languages don't have certain words, so we need to filter those language specific exceptions.
 		const LANGUAGE_EXCEPTIONS = {
 			ca: ["DAYBEFOREYESTERDAY"],
 			cv: ["DAYBEFOREYESTERDAY"],
@@ -163,7 +156,6 @@ describe("translations", () => {
 			tr: ["DAYBEFOREYESTERDAY"]
 		};
 
-		// Function to initialize JSDOM and load translations
 		const initializeTranslationDOM = async (language) => {
 			const Translator = await getFreshTranslator();
 			await Translator.load(mmm, translations[language], false);
@@ -171,8 +163,6 @@ describe("translations", () => {
 		};
 
 		beforeAll(async () => {
-			// Using German as the base rather than English, since
-			// some words do not have a direct translation in English.
 			const germanTranslations = await initializeTranslationDOM("de");
 			base = Object.keys(germanTranslations).sort();
 		});

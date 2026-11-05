@@ -2,10 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ipAccessControl, socketIpAccessControl } from "../../../js/ip_access_control";
 
-/**
- * Creates a minimal Express-like response mock used by the middleware tests.
- * @returns {{ status: ReturnType<typeof vi.fn>, send: ReturnType<typeof vi.fn> }} Mock response object.
- */
 const createResponseMock = () => {
 	const res = {};
 	res.status = vi.fn().mockReturnValue(res);
@@ -64,7 +60,6 @@ describe("ip_access_control", () => {
 			const middleware = ipAccessControl(["127.0.0.1"], ["127.0.0.1"]);
 			const req = {
 				socket: { remoteAddress: "127.0.0.1" },
-				// The attacker sends a spoofed loopback IP; the trusted proxy appends the real peer it saw.
 				headers: { "x-forwarded-for": "127.0.0.1, 203.0.113.9" }
 			};
 			const res = createResponseMock();

@@ -1,18 +1,9 @@
-/**
- * WeatherAPI Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
 
 const WEATHER_API_URL = "https://api.weatherapi.com/v1/forecast.json*";
 
-/**
- * Builds a stable WeatherAPI mock payload for current, daily, and hourly parsing tests.
- * @returns {object} WeatherAPI forecast response fixture.
- */
 const buildWeatherApiResponse = () => {
 	return {
 		location: {

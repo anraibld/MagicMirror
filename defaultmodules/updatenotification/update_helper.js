@@ -3,42 +3,6 @@ const Spawn = require("node:child_process").spawn;
 
 const Log = require("logger");
 
-/*
- * class Updater
- * Allow to self updating 3rd party modules from command defined in config
- *
- * [constructor] read value in config:
- * updates: [ // array of modules update commands
- *		{
- *			<module name>: <update command>
- *		},
- * 	{
- * 		...
- * 	}
- * ],
- * updateTimeout: 2 * 60 * 1000, // max update duration
- * updateAutorestart: false // autoRestart MM when update done ?
- *
- * [main command]: parse(<Array of modules>):
- * parse if module update is needed
- * --> Apply ONLY one update (first of the module list)
- * --> auto-restart MagicMirror or wait manual restart by user
- * return array with modules update state information for `updatenotification` module displayer information
- * [
- *		{
- *			name = <module-name>, // name of the module
- *			updateCommand = <update command>, // update command (if found)
- *			inProgress = <boolean>, // an update if in progress for this module
- *			error = <boolean>, // an error if detected when updating
- *			updated = <boolean>, // updated successfully
- *			needRestart = <boolean> // manual restart of MagicMirror is required by user
- *		},
- *		{
- *			...
- * 		}
- * ]
- */
-
 class Updater {
 	constructor (config) {
 		this.updates = config.updates;
@@ -51,7 +15,6 @@ class Updater {
 		Log.info("Updater Class Loaded!");
 	}
 
-	// [main command] parse if module update is needed
 	async parse (modules) {
 		var parser = modules.map(async (module) => {
 			if (this.moduleList[module.module] === undefined) {
@@ -82,15 +45,6 @@ class Updater {
 		return updater;
 	}
 
-	/*
-	 *  module updater with his proper command
-	 *  return object as result
-	 * {
-	 * 	error: <boolean>, // if error detected
-	 * 	updated: <boolean>, // if updated successfully
-	 * 	needRestart: <boolean> // if magicmirror restart required
-	 * };
-	 */
 	updateProcess (module) {
 		const Result = {
 			error: false,
@@ -130,12 +84,6 @@ class Updater {
 		});
 	}
 
-	/**
-	 * Restart the current MagicMirror process after a successful auto-update.
-	 * Under PM2 just exit and let PM2 respawn — spawning a child here would
-	 * race against PM2 and cause an EADDRINUSE conflict (see issue #4165).
-	 * Standalone: spawn a detached clone of the current process, then exit.
-	 */
 	nodeRestart () {
 		Log.info("Restarting MagicMirror...");
 
@@ -150,10 +98,6 @@ class Updater {
 		process.exit();
 	}
 
-	/**
-	 * Spawn a detached clone of the current Node process (same binary + argv),
-	 * wired to the parent's stdout/stderr.
-	 */
 	_spawnDetachedSelf () {
 		const nodeBinary = process.argv[0];
 		const nodeArgs = process.argv.slice(1);
@@ -167,13 +111,11 @@ class Updater {
 		child.unref();
 	}
 
-	// check if module is MagicMirror
 	isMagicMirror (module) {
 		if (module === "MagicMirror") return true;
 		return false;
 	}
 
-	// search update module command
 	applyCommand (module) {
 		if (this.isMagicMirror(module.module) || !this.updates.length) return null;
 		let command = null;

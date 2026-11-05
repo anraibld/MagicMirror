@@ -14,12 +14,12 @@ const config = {
 					{
 						maximumEntries: 15,
 						maximumNumberOfDays: 10000,
-						url: "http://localhost:8080/tests/mocks/calendar_test.ics" // contains 11 events
+						url: "http://localhost:8080/tests/mocks/calendar_test.ics"
 					},
 					{
 						maximumEntries: 15,
 						maximumNumberOfDays: 10000,
-						url: "http://localhost:8080/tests/mocks/calendar_test_clone.ics" // clone of upper calendar
+						url: "http://localhost:8080/tests/mocks/calendar_test_clone.ics"
 					}
 				]
 			}
@@ -27,7 +27,6 @@ const config = {
 	]
 };
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = config;
 }

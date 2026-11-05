@@ -1,10 +1,5 @@
 const Log = require("./logger");
 
-/**
- * Applies Electron command-line switches from config.
- * @param {object} commandLine Electron commandLine API
- * @param {Array<string|object>} [electronSwitches] User-configured switches
- */
 const applyElectronSwitches = (commandLine, electronSwitches) => {
 	if (electronSwitches === undefined) return;
 	if (!Array.isArray(electronSwitches)) {

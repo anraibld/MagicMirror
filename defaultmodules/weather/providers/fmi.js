@@ -44,21 +44,8 @@ const EARTH_RADIUS_KM = 6371;
 
 const FMI_TIME_ZONE = "Europe/Helsinki";
 
-/**
- * Convert degrees to radians.
- * @param {number} degrees Angle in degrees.
- * @returns {number} Angle in radians.
- */
 const toRadians = (degrees) => degrees * (Math.PI / 180);
 
-/**
- * Calculate the great-circle distance between two coordinates.
- * @param {number} lat1 First latitude.
- * @param {number} lon1 First longitude.
- * @param {number} lat2 Second latitude.
- * @param {number} lon2 Second longitude.
- * @returns {number} Distance in kilometres.
- */
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
 	const latDifference = toRadians(lat2 - lat1);
 	const lonDifference = toRadians(lon2 - lon1);
@@ -102,11 +89,6 @@ const WEATHER_SYMBOL_MAP = {
 	92: "fog"
 };
 
-/**
- * Return date and hour components for an FMI timestamp in Finnish local time.
- * @param {string|Date} value Forecast timestamp.
- * @returns {{dateKey: string, hour: number}} Local date key and hour.
- */
 const getFinnishLocalTime = (value) => {
 	const date = new Date(value);
 	const parts = new Intl.DateTimeFormat("en-CA", {
@@ -126,10 +108,6 @@ const getFinnishLocalTime = (value) => {
 	};
 };
 
-/**
- * Server-side weather provider for the Finnish Meteorological Institute (FMI).
- * Uses FMI Open Data for weather observations and forecasts.
- */
 class FMIProvider extends WeatherProvider {
 	constructor (config) {
 		super();
@@ -291,13 +269,6 @@ class FMIProvider extends WeatherProvider {
 		return current;
 	}
 
-	/**
-	 * Build the FMI WFS URL used for current weather observations.
-	 * The bounding box allows FMI to return nearby observation stations so the
-	 * provider can select the station closest to the configured coordinates.
-	 * @param {Date} [now] Current time used to build the observation window.
-	 * @returns {string} FMI WFS observation request URL.
-	 */
 	buildObservationUrl (now = new Date()) {
 		const startTime = new Date(now.getTime() - OBSERVATION_LOOKBACK_MINUTES * 60 * 1000);
 
@@ -322,10 +293,6 @@ class FMIProvider extends WeatherProvider {
 		return url.toString();
 	}
 
-	/**
-	 * Build the FMI WFS URL used for HARMONIE point forecasts.
-	 * @returns {string} FMI WFS forecast request URL.
-	 */
 	buildForecastUrl () {
 		const url = new URL(FMI_WFS_URL);
 
@@ -341,12 +308,6 @@ class FMIProvider extends WeatherProvider {
 		return url.toString();
 	}
 
-
-	/**
-	 * Parse FMI WFS point time-series observations.
-	 * @param {string} xml FMI WFS response body.
-	 * @returns {object[]} Parsed observations.
-	 */
 	parseObservationXml (xml) {
 		const observations = [];
 		const observationPattern = /<omso:PointTimeSeriesObservation\b[^>]*>(.*?)<\/omso:PointTimeSeriesObservation>/gs;
@@ -445,12 +406,6 @@ class FMIProvider extends WeatherProvider {
 			}));
 	}
 
-	/**
-	 * Group parsed observations by station and select the station nearest to
-	 * the configured coordinates.
-	 * @param {object[]} observations Parsed FMI observations.
-	 * @returns {object|null} Normalized data for the nearest station.
-	 */
 	selectNearestObservationStation (observations) {
 		const stations = new Map();
 
@@ -492,11 +447,6 @@ class FMIProvider extends WeatherProvider {
 		return completeStations.reduce((nearest, station) => (station.station.distance < nearest.station.distance ? station : nearest));
 	}
 
-	/**
-	 * Select the newest valid measurement from a parameter time series.
-	 * @param {object[]} measurements Parsed measurements.
-	 * @returns {object|null} Latest measurement.
-	 */
 	#getLatestMeasurement (measurements) {
 		let latest = null;
 
@@ -526,11 +476,6 @@ class FMIProvider extends WeatherProvider {
 		};
 	}
 
-	/**
-	 * Parse one FMI point time-series observation.
-	 * @param {string} xml Observation XML.
-	 * @returns {object|null} Parsed observation, or null when required metadata is missing.
-	 */
 	#parseObservation (xml) {
 		const parameter = this.#extractAttributeQueryParameter(xml, "observedProperty", "param");
 		const stationId = this.#extract(
@@ -591,12 +536,6 @@ class FMIProvider extends WeatherProvider {
 		};
 	}
 
-	/**
-	 * Parse one FMI forecast point time-series observation.
-	 * Forecast data does not contain observation-station metadata.
-	 * @param {string} xml Forecast observation XML.
-	 * @returns {object|null} Parsed forecast observation.
-	 */
 	#parseForecastObservation (xml) {
 		const parameter = this.#extractAttributeQueryParameter(xml, "observedProperty", "param");
 
@@ -633,24 +572,11 @@ class FMIProvider extends WeatherProvider {
 		};
 	}
 
-	/**
-	 * Extract text captured by a regular expression.
-	 * @param {string} value Source string.
-	 * @param {RegExp} pattern Pattern containing one capture group.
-	 * @returns {string|null} Captured value.
-	 */
 	#extract (value, pattern) {
 		const match = value.match(pattern);
 		return match ? match[1].trim() : null;
 	}
 
-	/**
-	 * Extract a query parameter from an FMI xlink:href attribute.
-	 * @param {string} xml Observation XML.
-	 * @param {string} elementName Element containing the xlink:href attribute.
-	 * @param {string} parameterName Query parameter to extract.
-	 * @returns {string|null} Query parameter value.
-	 */
 	#extractAttributeQueryParameter (xml, elementName, parameterName) {
 		const pattern = new RegExp(`<om:${elementName}\\b[^>]*xlink:href="([^"]+)"`);
 		const href = this.#extract(xml, pattern);

@@ -34,7 +34,6 @@ async function fetchDepartures(id, n) {
 module.exports = NodeHelper.create({
 	socketNotificationReceived(notification, payload) {
 		if (notification !== "KOLUMBUS_FETCH") return;
-		// fetch extra so lineFilter still leaves enough rows
 		const filtered = (payload.lineFilter && payload.lineFilter.length) || (payload.modes && payload.modes.length);
 		const n = filtered ? payload.maxDepartures * 8 : payload.maxDepartures;
 		fetchDepartures(payload.stopPlaceId, n)

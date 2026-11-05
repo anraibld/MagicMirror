@@ -1,12 +1,3 @@
-/*
- * MagicMirror² Test calendar exdate
- *
- * By jkriegshauser
- * MIT Licensed.
- *
- * See issue #3250
- * See tests/electron/modules/calendar_spec.js
- */
 const config = {
 	address: "0.0.0.0",
 	ipWhitelist: [],
@@ -21,7 +12,7 @@ const config = {
 				calendars: [
 					{
 						maximumEntries: 100,
-						maximumNumberOfDays: 28, // 4 weeks, 2 of which are skipped
+						maximumNumberOfDays: 28,
 						url: "http://localhost:8080/tests/mocks/exdate_la_at_midnight_dst.ics"
 					}
 				]
@@ -30,7 +21,6 @@ const config = {
 	]
 };
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = config;
 }

@@ -4,8 +4,6 @@ Module.register("testNotification", {
 		match: {
 			notificationID: "",
 			matchtype: "count"
-			//or
-			// type: 'contents' // look for item in field of content
 		}
 	},
 	count: 0,

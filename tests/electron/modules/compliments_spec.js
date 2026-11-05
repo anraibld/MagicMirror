@@ -2,12 +2,6 @@ const helpers = require("../helpers/global-setup");
 
 describe("Compliments module", () => {
 
-	/**
-	 * move similar tests in function doTest
-	 * @param {Array} complimentsArray The array of compliments.
-	 * @param {string} state The state of the element (e.g., "visible" or "attached").
-	 * @returns {boolean} result
-	 */
 	const doTest = async (complimentsArray, state = "visible") => {
 		await helpers.getElement(".compliments", state);
 		const elem = await helpers.getElement(".module-content", state);

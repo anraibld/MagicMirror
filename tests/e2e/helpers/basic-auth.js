@@ -11,7 +11,6 @@ const basicAuth = auth({
 
 app.use(basicAuth);
 
-// Set available directories
 const directories = ["/tests/configs", "/tests/mocks"];
 
 for (const directory of directories) {

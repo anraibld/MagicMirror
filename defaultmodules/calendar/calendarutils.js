@@ -1,21 +1,9 @@
 const CalendarUtils = {
 
-	/**
-	 * Capitalize the first letter of a string
-	 * @param {string} string The string to capitalize
-	 * @returns {string} The capitalized string
-	 */
 	capFirst (string) {
 		return string.charAt(0).toUpperCase() + string.slice(1);
 	},
 
-	/**
-	 * This function accepts a number (either 12 or 24) and returns a moment.js LocaleSpecification with the
-	 * corresponding time-format to be used in the calendar display. If no number is given (or otherwise invalid input)
-	 * it will a localeSpecification object with the system locale time format.
-	 * @param {number} timeFormat Specifies either 12 or 24-hour time format
-	 * @returns {moment.LocaleSpecification} formatted time
-	 */
 	getLocaleSpecification (timeFormat) {
 		switch (timeFormat) {
 			case 12: {
@@ -30,20 +18,11 @@ const CalendarUtils = {
 		}
 	},
 
-	/**
-	 * Shortens a string if it's longer than maxLength and add an ellipsis to the end
-	 * @param {string} string Text string to shorten
-	 * @param {number} maxLength The max length of the string
-	 * @param {boolean} wrapEvents Wrap the text after the line has reached maxLength
-	 * @param {number} maxTitleLines The max number of vertical lines before cutting event title
-	 * @returns {string} The shortened string
-	 */
 	shorten (string, maxLength, wrapEvents, maxTitleLines) {
 		if (typeof string !== "string") {
 			return "";
 		}
 
-		// Order matters: "&" must be escaped first, otherwise the entities added below would be escaped again.
 		const escapeHtml = (value) => value
 			.replaceAll("&", "&amp;")
 			.replaceAll("<", "&lt;")
@@ -60,7 +39,6 @@ const CalendarUtils = {
 			for (let i = 0; i < words.length; i++) {
 				const word = words[i];
 				if (currentLine.length + word.length < (typeof maxLength === "number" ? maxLength : 25) - 1) {
-					// max - 1 to account for a space
 					currentLine += `${word} `;
 				} else {
 					line++;
@@ -90,17 +68,6 @@ const CalendarUtils = {
 		}
 	},
 
-	/**
-	 * Transforms the title of an event for usage.
-	 * Replaces parts of the text as defined in config.titleReplace.
-	 * @param {string} title The title to transform.
-	 * @param {object} titleReplace object definition of parts to be replaced in the title
-	 *                 object definition:
-	 *                    search: {string,required} RegEx in format //x or simple string to be searched. For (birthday) year calculation, the element matching the year must be in a RegEx group
-	 *                    replace: {string,required} Replacement string, may contain match group references (latter is required for year calculation)
-	 *                    yearmatchgroup: {number,optional} match group for year element
-	 * @returns {string} The transformed title.
-	 */
 	titleTransform (title, titleReplace) {
 		let transformedTitle = title;
 		for (const tr in titleReplace) {
@@ -110,7 +77,6 @@ const CalendarUtils = {
 					const regParts = transform.search.match(/^\/(.+)\/([gim]*)$/);
 					let needle = new RegExp(transform.search, "g");
 					if (regParts) {
-						// the parsed pattern is a regexp with flags.
 						needle = new RegExp(regParts[1], regParts[2]);
 					}
 

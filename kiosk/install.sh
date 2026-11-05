@@ -1,5 +1,4 @@
 #!/bin/bash
-# Installerer kiosk-oppsettet (idempotent). KIOSK_HOME/ROOTFS kan settes for å installere på et montert SD-kort.
 H="${KIOSK_HOME:-$HOME}"; ROOT="${ROOTFS:-}"; SRC="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 mkdir -p "$H/.local/bin" "$H/.config/systemd/user/default.target.wants" "$H/.config/systemd/user/timers.target.wants" "$H/.config/labwc"
 install -m755 "$SRC"/bin/* "$H/.local/bin/"
@@ -10,7 +9,6 @@ ln -sfn ../mm-update.timer "$H/.config/systemd/user/timers.target.wants/mm-updat
 for m in "$SRC"/modules/*/; do mkdir -p "$H/MagicMirror/modules/$(basename "$m")"; cp -a "$m". "$H/MagicMirror/modules/$(basename "$m")/"; done
 [ -f "$H/MagicMirror/config/config.js" ] || cp "$SRC/config.template.js" "$H/MagicMirror/config/config.js"
 cp "$SRC/custom.css" "$H/MagicMirror/config/custom.css"
-# labwc: autostart + Super+M
 A="$H/.config/labwc/autostart"
 [ -f "$A" ] || cp "$ROOT/etc/xdg/labwc/autostart" "$A"
 grep -q mm-mode "$A" || printf '\n# MagicMirror kiosk (Super+M bytter)\n$HOME/.local/bin/mm-mode mirror &\n' >> "$A"

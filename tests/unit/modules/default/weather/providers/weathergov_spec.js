@@ -1,9 +1,3 @@
-/**
- * Weather.gov Weather Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- * Weather.gov is the US National Weather Service API.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
@@ -24,7 +18,6 @@ let server;
 
 beforeAll(() => {
 	server = setupServer(
-		// Default handlers for initialization
 		http.get(WEATHERGOV_POINTS_URL, () => {
 			return HttpResponse.json(pointsData);
 		}),
@@ -41,7 +34,6 @@ afterAll(() => {
 
 afterEach(() => {
 	server.resetHandlers();
-	// Re-add default initialization handlers
 	server.use(
 		http.get(WEATHERGOV_POINTS_URL, () => {
 			return HttpResponse.json(pointsData);
@@ -74,7 +66,7 @@ describe("WeatherGovProvider", () => {
 
 		it("should have default update interval", () => {
 			const provider = new WeatherGovProvider({});
-			expect(provider.config.updateInterval).toBe(600000); // 10 minutes
+			expect(provider.config.updateInterval).toBe(600000);
 		});
 	});
 
@@ -151,7 +143,7 @@ describe("WeatherGovProvider", () => {
 			expect(result.temperature).toBe(-1);
 			expect(result.windSpeed).toBe(0);
 			expect(result.windFromDirection).toBe(0);
-			expect(result.humidity).toBe(64); // Rounded from 63.77
+			expect(result.humidity).toBe(64);
 			expect(result.weatherType).not.toBeNull();
 		});
 
@@ -177,7 +169,6 @@ describe("WeatherGovProvider", () => {
 
 			const result = await dataPromise;
 
-			// Real data has null windChill - falls back to temperature
 			expect(result.feelsLikeTemp).toBe(-1);
 		});
 
@@ -264,11 +255,9 @@ describe("WeatherGovProvider", () => {
 
 			const result = await dataPromise;
 
-			// Mock data starts on 2026-02-06 ("This Afternoon").
-			// Before the fix, slice(1) dropped today, so result[0] would have been 2026-02-07.
 			const firstDate = result[0].date;
 			expect(firstDate.getFullYear()).toBe(2026);
-			expect(firstDate.getMonth()).toBe(1); // February (0-indexed)
+			expect(firstDate.getMonth()).toBe(1);
 			expect(firstDate.getDate()).toBe(6);
 		});
 	});
@@ -297,7 +286,7 @@ describe("WeatherGovProvider", () => {
 			const result = await dataPromise;
 
 			expect(Array.isArray(result)).toBe(true);
-			expect(result).toHaveLength(156); // Real API returns 156 hourly periods
+			expect(result).toHaveLength(156);
 			expect(result[0]).toHaveProperty("temperature");
 			expect(result[0]).toHaveProperty("windSpeed");
 			expect(result[0]).toHaveProperty("windFromDirection");
@@ -326,9 +315,7 @@ describe("WeatherGovProvider", () => {
 
 			const result = await dataPromise;
 
-			// Real data has "S" wind for both hours
 			expect(result[0].windFromDirection).toBe(180);
-			// Third hour also has "S" wind
 			expect(result[2].windFromDirection).toBe(180);
 		});
 
@@ -354,8 +341,7 @@ describe("WeatherGovProvider", () => {
 
 			const result = await dataPromise;
 
-			// Wind speeds should be converted from km/h to m/s
-			expect(result[0].windSpeed).toBeCloseTo(1.11, 1); // Real data: 4 km/h -> ~1.11 m/s
+			expect(result[0].windSpeed).toBeCloseTo(1.11, 1);
 		});
 	});
 
@@ -379,7 +365,6 @@ describe("WeatherGovProvider", () => {
 
 			await provider.initialize();
 
-			// Should call error callback
 			const error = await errorPromise;
 			expect(error).toHaveProperty("message");
 		});
@@ -435,7 +420,6 @@ describe("WeatherGovProvider", () => {
 
 			const result = await dataPromise;
 
-			// Thunderstorm should map to day or night thunderstorm
 			expect(["thunderstorm", "night-thunderstorm"]).toContain(result.weatherType);
 		});
 	});

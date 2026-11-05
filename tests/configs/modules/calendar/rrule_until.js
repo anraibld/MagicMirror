@@ -13,7 +13,7 @@ const config = {
 				calendars: [
 					{
 						maximumEntries: 100,
-						maximumNumberOfDays: 1, // Just today
+						maximumNumberOfDays: 1,
 						url: "http://localhost:8080/tests/mocks/rrule_until.ics"
 					}
 				]
@@ -22,7 +22,6 @@ const config = {
 	]
 };
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = config;
 }

@@ -1,8 +1,3 @@
-/**
- * Weatherbit Weather Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";

@@ -1,9 +1,3 @@
-/**
- * Pirate Weather Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- * Pirate Weather is a Dark Sky API compatible service.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
@@ -94,7 +88,7 @@ describe("PirateweatherProvider", () => {
 			expect(result.feelsLikeTemp).toBe(-4.77);
 			expect(result.windSpeed).toBe(2.32);
 			expect(result.windFromDirection).toBe(166);
-			expect(Math.round(result.humidity)).toBe(56); // 0.56 * 100 with rounding
+			expect(Math.round(result.humidity)).toBe(56);
 		});
 
 		it("should include sunrise/sunset from daily data", async () => {
@@ -147,7 +141,6 @@ describe("PirateweatherProvider", () => {
 
 			const result = await dataPromise;
 
-			// "cloudy" icon from real data
 			expect(result.weatherType).toBe("cloudy");
 		});
 	});
@@ -209,7 +202,6 @@ describe("PirateweatherProvider", () => {
 
 			const result = await dataPromise;
 
-			// First day has precipAccumulation: 0.0 cm
 			expect(result[0].precipitationAmount).toBe(0);
 		});
 
@@ -236,11 +228,9 @@ describe("PirateweatherProvider", () => {
 
 			const result = await dataPromise;
 
-			// First day has precipType: "snow"
 			expect(result[0].rain).toBe(0);
 			expect(result[0].snow).toBe(0);
 
-			// Second day has precipType: "snow" with 0.0 accumulation
 			expect(result[1].rain).toBe(0);
 			expect(result[1].snow).toBe(0);
 		});
@@ -268,7 +258,6 @@ describe("PirateweatherProvider", () => {
 
 			const result = await dataPromise;
 
-			// 0.33 -> 33%
 			expect(result[0].precipitationProbability).toBe(33);
 		});
 	});
@@ -331,7 +320,6 @@ describe("PirateweatherProvider", () => {
 
 			const result = await dataPromise;
 
-			// First hour has 0.0 cm precipitation
 			expect(result[0].precipitationAmount).toBe(0);
 			expect(result[0].rain).toBe(0);
 		});

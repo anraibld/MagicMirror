@@ -1,4 +1,3 @@
-// Load lightweight internal alias resolver
 require("./alias-resolver");
 
 const fs = require("node:fs");
@@ -6,10 +5,8 @@ const path = require("node:path");
 const Spawn = require("node:child_process").spawn;
 const Log = require("logger");
 
-// global absolute root path
 global.root_path = path.resolve(`${__dirname}/../`);
 
-// used to control fetch timeout for node_helpers
 const { setGlobalDispatcher, Agent } = require("undici");
 
 const Server = require("./server");
@@ -17,15 +14,12 @@ const Utils = require("./utils");
 const { ConfigError } = require("./utils");
 
 const { getEnvVarsAsObj } = require("#server_functions");
-// common timeout value, provide environment override in case
 const fetch_timeout = process.env.mmFetchTimeout !== undefined ? process.env.mmFetchTimeout : 30000;
 
-// Get version number.
 global.version = require(`${global.root_path}/package.json`).version;
 global.mmTestMode = process.env.mmTestMode === "true";
 Log.log(`Starting MagicMirror: v${global.version}`);
 
-// Log system information in a subprocess so it is shown even on early startup failures.
 Spawn("node ./js/systeminformation.js", {
 	env: {
 		...process.env,
@@ -42,10 +36,7 @@ if (process.env.MM_CONFIG_FILE) {
 	global.configuration_file = process.env.MM_CONFIG_FILE.replace(`${global.root_path}/`, "");
 }
 
-// The next part is here to prevent a major exception when there
-// is no internet connection. This could probable be solved better.
 process.on("uncaughtException", (err) => {
-	// ignore strange exceptions under aarch64 coming from systeminformation:
 	if (!err.stack.includes("node_modules/systeminformation")) {
 		Log.error("Whoops! There was an uncaught exception...");
 		Log.error(err);
@@ -54,9 +45,6 @@ process.on("uncaughtException", (err) => {
 	}
 });
 
-/**
- * The core app.
- */
 class App {
 	#nodeHelpers = [];
 
@@ -68,40 +56,25 @@ class App {
 
 	constructor () {
 
-		/*
-		 * Listen for SIGINT signal and call stop() function.
-		 *
-		 * Added to fix #1056
-		 * Note: this is only used if running `server-only`. Otherwise
-		 * this.stop() is called by app.on("before-quit"... in `electron.js`
-		 */
 		process.on("SIGINT", async () => {
 			Log.log("[SIGINT] Received. Shutting down server...");
 			setTimeout(() => {
 				process.exit(0);
-			}, 3000); // Force quit after 3 seconds
+			}, 3000);
 			await this.stop();
 			process.exit(0);
 		});
 
-		/*
-		 * Listen to SIGTERM signals so we can stop everything when we
-		 * are asked to stop by the OS.
-		 */
 		process.on("SIGTERM", async () => {
 			Log.log("[SIGTERM] Received. Shutting down server...");
 			setTimeout(() => {
 				process.exit(0);
-			}, 3000); // Force quit after 3 seconds
+			}, 3000);
 			await this.stop();
 			process.exit(0);
 		});
 	}
 
-	/**
-	 * Loads a specific module.
-	 * @param {string} module The name of the module (including subpath).
-	 */
 	#loadModule (module) {
 		const elements = module.split("/");
 		const moduleName = elements[elements.length - 1];
@@ -112,7 +85,6 @@ class App {
 			if (!global.mmTestMode) {
 				moduleFolder = defaultModuleFolder;
 			} else {
-				// running in test mode, allow defaultModules placed under moduleDir for testing
 				if (this.#env.modulesDir === "modules" || this.#env.modulesDir === "tests/mocks") {
 					moduleFolder = defaultModuleFolder;
 				}
@@ -137,7 +109,6 @@ class App {
 			Log.log(`No helper found for module: ${moduleName}.`);
 		}
 
-		// if the helper was found
 		if (loadHelper) {
 			let Module;
 			try {
@@ -166,11 +137,6 @@ class App {
 		}
 	}
 
-	/**
-	 * Loads all modules.
-	 * @param {Module[]} modules All modules to be loaded
-	 * @returns {Promise} A promise that is resolved when all modules been loaded
-	 */
 	async #loadModules (modules) {
 		Log.log("Loading module helpers ...");
 
@@ -181,13 +147,6 @@ class App {
 		Log.log("All module helpers loaded.");
 	}
 
-	/**
-	 * Compare two semantic version numbers and return the difference.
-	 * @param {string} a Version number a.
-	 * @param {string} b Version number b.
-	 * @returns {number} A positive number if a is larger than b, a negative
-	 * number if a is smaller and 0 if they are the same
-	 */
 	#cmpVersions (a, b) {
 		let i, diff;
 		const regExStrip0 = /(\.0+)+$/;
@@ -204,18 +163,10 @@ class App {
 		return segmentsA.length - segmentsB.length;
 	}
 
-	/**
-	 * Start the core app.
-	 *
-	 * It loads the config, then it loads all modules.
-	 * @async
-	 * @returns {Promise<object>} the config used
-	 */
 	async start () {
 		try {
 			const configObj = Utils.loadConfig();
 			global.config = configObj.fullConf;
-			// Keep a copy of the redacted config to later verify module secret permissions
 			global.configRedacted = configObj.redactedConf;
 			const config = global.config;
 			Utils.checkConfigFile(configObj);
@@ -226,7 +177,6 @@ class App {
 			Log.setLogLevel(config.logLevel);
 
 			this.#env = getEnvVarsAsObj();
-			// check for deprecated css/custom.css and move it to new location
 			if ((!fs.existsSync(`${global.root_path}/${this.#env.customCss}`)) && (fs.existsSync(`${global.root_path}/css/custom.css`))) {
 				try {
 					fs.renameSync(`${global.root_path}/css/custom.css`, `${global.root_path}/${this.#env.customCss}`);
@@ -236,7 +186,6 @@ class App {
 				}
 			}
 
-			// get the used module positions
 			Utils.getModulePositions();
 
 			const modules = [];
@@ -244,7 +193,6 @@ class App {
 				if (module.disabled) continue;
 				if (module.module) {
 					if (Utils.moduleHasValidPosition(module.position) || typeof (module.position) === "undefined") {
-						// Only add this module to be loaded if it is not a duplicate (repeated instance of the same module)
 						if (!modules.includes(module.module)) {
 							modules.push(module.module);
 						}
@@ -279,7 +227,6 @@ class App {
 
 			const results = await Promise.allSettled(nodePromises);
 
-			// Log errors that happened during async node_helper startup
 			results.forEach((result) => {
 				if (result.status === "rejected") {
 					Log.error(result.reason);
@@ -297,20 +244,11 @@ class App {
 			}
 
 			const int32 = new Int32Array(new SharedArrayBuffer(4));
-			// wait 1000ms before exiting so that child processes (e.g. systeminformation) have some additional time
 			Atomics.wait(int32, 0, 0, 1000);
 			process.exit(1);
 		}
 	}
 
-	/**
-	 * Stops the core app. This calls each node_helper's STOP() function, if it
-	 * exists.
-	 *
-	 * Added to fix #1056
-	 * @returns {Promise} A promise that is resolved when all node_helpers and
-	 * the http server has been closed
-	 */
 	async stop () {
 		const nodePromises = [];
 		for (const nodeHelper of this.#nodeHelpers) {
@@ -326,7 +264,6 @@ class App {
 
 		const results = await Promise.allSettled(nodePromises);
 
-		// Log errors that happened during async node_helper stopping
 		results.forEach((result) => {
 			if (result.status === "rejected") {
 				Log.error(result.reason);
@@ -335,8 +272,6 @@ class App {
 
 		Log.log("Node_helpers stopped ...");
 
-		// To be able to stop the app even if it hasn't been started (when
-		// running with Electron against another server)
 		if (!this.#httpServer) {
 			return Promise.resolve();
 		}

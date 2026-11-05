@@ -6,38 +6,19 @@ const Log = require("./logger");
 const { applyElectronSwitches } = require("./electron_helper");
 const { getServerPort } = require("#server_functions");
 
-// Config
 let config = process.env.config ? JSON.parse(process.env.config) : {};
-// Module to control application life.
 const app = electron.app;
 
-/*
- * Per default electron is started with --disable-gpu flag, if you want the gpu enabled,
- * you must set the env var ELECTRON_ENABLE_GPU=1 on startup.
- * See https://www.electronjs.org/docs/latest/tutorial/offscreen-rendering for more info.
- */
 if (process.env.ELECTRON_ENABLE_GPU !== "1") {
 	app.disableHardwareAcceleration();
 }
 
-// Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
 
-/*
- * Keep a global reference of the window object, if you don't, the window will
- * be closed automatically when the JavaScript object is garbage collected.
- */
 let mainWindow;
 
-/**
- * Create and show the main browser window.
- */
 const createWindow = () => {
 
-	/*
-	 * see https://www.electronjs.org/docs/latest/api/screen
-	 * Create a window that fills the screen's available work area.
-	 */
 	let electronSize = { width: 800, height: 600 };
 	try {
 		electronSize = electron.screen.getPrimaryDisplay().workAreaSize;
@@ -69,7 +50,6 @@ const createWindow = () => {
 	const electronOptions = Object.assign({}, electronOptionsDefaults, config.electronOptions);
 
 	if (process.env.MOCK_DATE !== undefined) {
-		// if we are running tests and we want to mock the current date
 		const fakeNow = new Date(process.env.MOCK_DATE).valueOf();
 		Date = class extends Date {
 			constructor (...args) {
@@ -85,13 +65,7 @@ const createWindow = () => {
 		Date.now = () => __DateNow() + __DateNowOffset;
 	}
 
-	// Create the browser window.
 	mainWindow = new BrowserWindow(electronOptions);
-
-	/*
-	 * and load the index.html of the app.
-	 * If config.address is not defined or is an empty string (listening on all interfaces), connect to localhost
-	 */
 
 	let prefix;
 	if (config.tls || config.useHttps) {
@@ -106,27 +80,22 @@ const createWindow = () => {
 	const port = getServerPort(config);
 	mainWindow.loadURL(`${prefix}${config.address}:${port}`);
 
-	// Open the DevTools if run with "node --run start:dev"
 	if (process.argv.includes("dev")) {
 		if (process.env.mmTestMode) {
-			// if we are running tests
 			const devtools = new BrowserWindow(electronOptions);
 			mainWindow.webContents.setDevToolsWebContents(devtools.webContents);
 		}
 		mainWindow.webContents.openDevTools();
 	}
 
-	// simulate mouse move to hide black cursor on start
 	mainWindow.webContents.on("dom-ready", () => {
 		mainWindow.webContents.sendInputEvent({ type: "mouseMove", x: 0, y: 0 });
 	});
 
-	// Set responders for window events.
 	mainWindow.on("closed", () => {
 		mainWindow = null;
 	});
 
-	//remove response headers that prevent sites of being embedded into iframes if configured
 	mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
 		let curHeaders = details.responseHeaders;
 		if (config.ignoreXOriginHeader) {
@@ -145,10 +114,8 @@ const createWindow = () => {
 	});
 };
 
-// Quit when all windows are closed.
 app.on("window-all-closed", () => {
 	if (process.env.mmTestMode) {
-		// if we are running tests
 		app.quit();
 	} else {
 		createWindow();
@@ -157,45 +124,26 @@ app.on("window-all-closed", () => {
 
 app.on("activate", () => {
 
-	/*
-	 * On OS X it's common to re-create a window in the app when the
-	 * dock icon is clicked and there are no other windows open.
-	 */
 	if (mainWindow === null) {
 		createWindow();
 	}
 });
 
-/*
- * Electron routes SIGINT (and other quit signals) to the app's quit sequence,
- * which triggers this "before-quit" event. This handler calls each
- * node_helper's stop function if it exists.
- * Added to fix #1056 (no method to gracefully shut down modules on exit).
- *
- * Note: this is only used if running Electron. Otherwise
- * core.stop() is called by process.on("SIGINT"... in `app.js`
- */
 app.on("before-quit", async (event) => {
 	Log.log("Shutting down server...");
 	event.preventDefault();
 	setTimeout(() => {
 		process.exit(0);
-	}, 3000); // Force-quit after 3 seconds.
+	}, 3000);
 	await core.stop();
 	process.exit(0);
 });
 
-/**
- * Handle errors from self-signed certificates
- */
 app.on("certificate-error", (event, webContents, url, error, certificate, callback) => {
 	event.preventDefault();
 	callback(true);
 });
 
-/**
- * Bootstrap Electron: launch the client-only viewer and/or the full core application.
- */
 const bootstrapElectron = async () => {
 	if (process.env.clientonly) {
 		await app.whenReady();
@@ -203,10 +151,6 @@ const bootstrapElectron = async () => {
 		createWindow();
 	}
 
-	/*
-	 * Start the core application if server is run on localhost
-	 * This starts all node helpers and starts the webserver.
-	 */
 	if (["localhost", "127.0.0.1", "::1", "::ffff:127.0.0.1", undefined].includes(config.address)) {
 		config = await core.start();
 		await app.whenReady();

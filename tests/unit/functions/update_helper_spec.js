@@ -24,11 +24,6 @@ describe("UpdateHelper", () => {
 		tempRoots.length = 0;
 	});
 
-	/**
-	 * Creates a temporary MagicMirror-like root with a module directory.
-	 * @param {string} moduleName - Name of the module directory to create.
-	 * @returns {{ root: string, modulePath: string }} Created paths.
-	 */
 	const createTempModuleRoot = (moduleName) => {
 		const root = mkdtempSync(join(tmpdir(), "mm-updater-"));
 		const modulePath = join(root, "modules", moduleName);
@@ -37,11 +32,6 @@ describe("UpdateHelper", () => {
 		return { root, modulePath };
 	};
 
-	/**
-	 * Creates a fresh UpdateHelper instance for testing.
-	 * @param {object} config - Optional config overrides.
-	 * @returns {Promise<object>} Resolved UpdateHelper instance.
-	 */
 	const createUpdater = async (config = {}) => {
 		const updateHelperModule = await import("../../../defaultmodules/updatenotification/update_helper");
 		const UpdateHelper = updateHelperModule.default || updateHelperModule;

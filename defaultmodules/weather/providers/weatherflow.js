@@ -2,16 +2,8 @@ const Log = require("logger");
 const { convertKmhToMs } = require("../provider-utils");
 const WeatherProvider = require("../weatherprovider");
 
-/**
- * WeatherFlow weather provider
- * This class is a provider for WeatherFlow personal weather stations.
- * Note that the WeatherFlow API does not provide snowfall.
- */
 class WeatherFlowProvider extends WeatherProvider {
 
-	/**
-	 * @param {object} config - Provider configuration
-	 */
 	constructor (config) {
 		super();
 		this.config = config;
@@ -43,9 +35,6 @@ class WeatherFlowProvider extends WeatherProvider {
 		this.#initializeFetcher();
 	}
 
-	/**
-	 * Initialize the HTTP fetcher
-	 */
 	#initializeFetcher () {
 		const url = this.#getUrl();
 
@@ -63,20 +52,11 @@ class WeatherFlowProvider extends WeatherProvider {
 		});
 	}
 
-	/**
-	 * Generate the URL for API requests
-	 * @returns {string} The API URL
-	 */
 	#getUrl () {
 		const base = this.config.apiBase || "https://swd.weatherflow.com/swd/rest/";
 		return `${base}better_forecast?station_id=${this.config.stationid}&units_temp=c&units_wind=kph&units_pressure=mb&units_precip=mm&units_distance=km&token=${this.config.token}`;
 	}
 
-	/**
-	 * Process the raw API data
-	 * @param {object} data - Raw API response
-	 * @returns {object} Processed weather data
-	 */
 	#processData (data) {
 		try {
 			let weatherData;
@@ -101,11 +81,6 @@ class WeatherFlowProvider extends WeatherProvider {
 		}
 	}
 
-	/**
-	 * Generate current weather data
-	 * @param {object} data - API response data
-	 * @returns {object} Current weather object
-	 */
 	#generateCurrent (data) {
 		if (!data || !data.current_conditions || !data.forecast || !Array.isArray(data.forecast.daily) || data.forecast.daily.length === 0) {
 			Log.error("[weatherflow] Invalid current weather data structure");
@@ -134,11 +109,6 @@ class WeatherFlowProvider extends WeatherProvider {
 		return weather;
 	}
 
-	/**
-	 * Generate forecast data
-	 * @param {object} data - API response data
-	 * @returns {Array} Array of forecast objects
-	 */
 	#generateDaily (data) {
 		if (!data || !data.forecast || !Array.isArray(data.forecast.daily) || !Array.isArray(data.forecast.hourly)) {
 			Log.error("[weatherflow] Invalid forecast data structure");
@@ -159,21 +129,18 @@ class WeatherFlowProvider extends WeatherProvider {
 				uvIndex: 0
 			};
 
-			// Build UV and precipitation from hourly data
 			for (const hour of data.forecast.hourly) {
 				const hourDate = new Date(hour.time * 1000);
 				const forecastDate = new Date(forecast.day_start_local * 1000);
 
-				// Compare year, month, and day to ensure correct matching across month boundaries
 				if (hourDate.getFullYear() === forecastDate.getFullYear()
 				  && hourDate.getMonth() === forecastDate.getMonth()
 				  && hourDate.getDate() === forecastDate.getDate()) {
 					weather.uvIndex = Math.max(weather.uvIndex, hour.uv ?? 0);
 					weather.precipitationAmount += hour.precip ?? 0;
 				} else if (hourDate > forecastDate) {
-					// Check if we've moved to the next day
 					const diffMs = hourDate - forecastDate;
-					if (diffMs >= 86400000) break; // 24 hours in ms
+					if (diffMs >= 86400000) break;
 				}
 			}
 
@@ -183,11 +150,6 @@ class WeatherFlowProvider extends WeatherProvider {
 		return days;
 	}
 
-	/**
-	 * Generate hourly forecast data
-	 * @param {object} data - API response data
-	 * @returns {Array} Array of hourly forecast objects
-	 */
 	#generateHourly (data) {
 		if (!data || !data.forecast || !Array.isArray(data.forecast.hourly)) {
 			Log.error("[weatherflow] Invalid hourly data structure");
@@ -213,18 +175,12 @@ class WeatherFlowProvider extends WeatherProvider {
 
 			hours.push(weather);
 
-			// WeatherFlow provides 10 days of hourly data, trim to 48 hours
 			if (hours.length >= 48) break;
 		}
 
 		return hours;
 	}
 
-	/**
-	 * Convert weather icon type
-	 * @param {string} weatherType - WeatherFlow icon code
-	 * @returns {string} Weather icon CSS class
-	 */
 	#convertWeatherType (weatherType) {
 		const weatherTypes = {
 			"clear-day": "day-sunny",

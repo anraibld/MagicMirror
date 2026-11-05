@@ -1,4 +1,3 @@
-/*eslint object-shorthand: ["error", "always", { "methodsIgnorePattern": "^roundToInt2$" }]*/
 
 const config = require(`${process.cwd()}/tests/configs/default.js`).configFactory({
 	modules: [
@@ -29,7 +28,6 @@ const config = require(`${process.cwd()}/tests/configs/default.js`).configFactor
 	]
 });
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = config;
 }

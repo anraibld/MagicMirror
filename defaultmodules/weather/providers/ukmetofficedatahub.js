@@ -2,17 +2,6 @@ const Log = require("logger");
 const { getSunTimes } = require("../provider-utils");
 const WeatherProvider = require("../weatherprovider");
 
-/**
- * UK Met Office Data Hub provider
- * For more information: https://www.metoffice.gov.uk/services/data/datapoint/notifications/weather-datahub
- *
- * Data available:
- * - Hourly data for next 2 days (for current weather)
- * - 3-hourly data for next 7 days (for hourly forecasts)
- * - Daily data for next 7 days (for daily forecasts)
- *
- * Free accounts limited to 360 requests/day per service (once every 4 minutes)
- */
 class UkMetOfficeDataHubProvider extends WeatherProvider {
 	constructor (config) {
 		super();
@@ -121,7 +110,6 @@ class UkMetOfficeDataHubProvider extends WeatherProvider {
 		const timeSeries = data.features[0].properties.timeSeries;
 		const now = new Date();
 
-		// Find the hour that contains current time
 		for (const hour of timeSeries) {
 			const forecastTime = new Date(hour.time);
 			const oneHourLater = new Date(forecastTime.getTime() + 60 * 60 * 1000);
@@ -145,7 +133,6 @@ class UkMetOfficeDataHubProvider extends WeatherProvider {
 					sunset: null
 				};
 
-				// Calculate sunrise/sunset using SunCalc
 				const { sunrise, sunset } = getSunTimes(now, this.config.lat, this.config.lon);
 				current.sunrise = sunrise;
 				current.sunset = sunset;
@@ -154,7 +141,6 @@ class UkMetOfficeDataHubProvider extends WeatherProvider {
 			}
 		}
 
-		// Fallback to first hour if no match found
 		const firstHour = timeSeries[0];
 		const current = {
 			date: new Date(firstHour.time),
@@ -189,7 +175,6 @@ class UkMetOfficeDataHubProvider extends WeatherProvider {
 			const forecastDate = new Date(day.time);
 			forecastDate.setHours(0, 0, 0, 0);
 
-			// Only include today and future days
 			if (forecastDate >= today) {
 				days.push({
 					date: new Date(day.time),
@@ -217,7 +202,6 @@ class UkMetOfficeDataHubProvider extends WeatherProvider {
 		const hours = [];
 
 		for (const hour of timeSeries) {
-			// 3-hourly data uses maxScreenAirTemp/minScreenAirTemp, not screenTemperature
 			const temp = hour.screenTemperature !== undefined
 				? hour.screenTemperature
 				: (hour.maxScreenAirTemp !== undefined && hour.minScreenAirTemp !== undefined)
@@ -242,12 +226,6 @@ class UkMetOfficeDataHubProvider extends WeatherProvider {
 		return hours;
 	}
 
-	/**
-	 * Convert Met Office significant weather code to weathericons.css icon
-	 * See: https://metoffice.apiconnect.ibmcloud.com/metoffice/production/node/264
-	 * @param {number} weatherType - Met Office weather code
-	 * @returns {string|null} Weathericons.css icon name or null
-	 */
 	#convertWeatherType (weatherType) {
 		const weatherTypes = {
 			0: "night-clear",

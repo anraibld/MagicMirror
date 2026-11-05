@@ -98,9 +98,7 @@ export default defineConfig([
 			"js/translator.js"
 		],
 		rules: {
-			// Browser ESM entry files must always include the file extension in relative imports.
 			"import-x/extensions": ["error", "always"],
-			// These files are generated at server startup and don't exist in a fresh checkout.
 			"import-x/no-unresolved": ["error", {ignore: ["^\\./positions\\.js$", "^\\.\\./config/basepath\\.js$"]}]
 		}
 	},
@@ -183,11 +181,6 @@ export default defineConfig([
 		extends: [playwright.configs["flat/recommended"]],
 		rules: {
 
-			/*
-			 * Tests use Vitest-style plain beforeAll()/afterAll() calls, not Playwright's
-			 * test.beforeAll() style. The rule incorrectly treats all plain hook calls
-			 * as the same unnamed type, flagging the second hook as a duplicate.
-			 */
 			"playwright/no-duplicate-hooks": "off",
 			"playwright/no-standalone-expect": "off"
 		}

@@ -1,12 +1,5 @@
-/**
- * Weather Provider Smoke Tests
- *
- * Tests basic provider functionality: configuration, callbacks, and validation.
- * Parser logic with private methods (#) is validated through live testing.
- */
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from "vitest";
 
-// Mock global fetch for location lookup
 const originalFetch = global.fetch;
 
 global.fetch = vi.fn(() => Promise.resolve({
@@ -14,7 +7,6 @@ global.fetch = vi.fn(() => Promise.resolve({
 	json: () => Promise.resolve({ city: "Munich", locality: "Munich" })
 }));
 
-// Restore original fetch after all tests
 afterAll(() => {
 	global.fetch = originalFetch;
 });

@@ -1,9 +1,3 @@
-/**
- * Format the time according to the config
- * @param {object} config The config of the module
- * @param {object} time time to format
- * @returns {string} The formatted time string
- */
 const formatTime = (config, time) => {
 	let date = moment(time);
 

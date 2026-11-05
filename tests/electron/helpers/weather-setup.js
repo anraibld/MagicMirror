@@ -3,11 +3,6 @@ const path = require("node:path");
 const weatherUtils = require("../../../defaultmodules/weather/provider-utils");
 const helpers = require("./global-setup");
 
-/**
- * Inject mock weather data directly via socket communication
- * This bypasses the weather provider and tests only client-side rendering
- * @param {string} mockDataFile - Filename of mock data in tests/mocks
- */
 const injectMockWeatherData = async (mockDataFile) => {
 	const rawData = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../mocks", mockDataFile)).toString());
 
@@ -55,7 +50,6 @@ const injectMockWeatherData = async (mockDataFile) => {
 		}));
 	}
 
-	// Inject weather data by evaluating code in the browser context
 	await global.page.evaluate(({ type, data }) => {
 		const weatherModule = MM.getModules().find((m) => m.name === "weather");
 		if (weatherModule) {
@@ -88,13 +82,10 @@ exports.getText = async (element, result) => {
 exports.startApp = async (configFileName, systemDate, mockDataFile = "weather_onecall_current.json") => {
 	await helpers.startApplication(configFileName, systemDate);
 
-	// Wait for weather module to be present in DOM
 	await global.page.waitForSelector(".weather", { timeout: 5000 });
 
-	// Inject mock weather data
 	await injectMockWeatherData(mockDataFile);
 
-	// Wait for weather content to be rendered
 	await global.page.waitForFunction(() => {
 		const weatherRoot = document.querySelector(".weather");
 		return !!(weatherRoot && weatherRoot.textContent && weatherRoot.textContent.trim().length > 0);

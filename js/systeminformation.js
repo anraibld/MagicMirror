@@ -1,7 +1,6 @@
 const os = require("node:os");
 const { execFileSync } = require("node:child_process");
 const si = require("systeminformation");
-// needed with relative path because logSystemInformation is called in an own process in app.js:
 const mmVersion = require("../package").version;
 const Log = require("./logger");
 
@@ -11,7 +10,6 @@ try {
 	mmGitHash = execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim();
 	mmGitBranch = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { encoding: "utf8" }).trim();
 } catch {
-	// not a git repo or git not available
 }
 
 const logSystemInformation = async () => {
@@ -38,7 +36,6 @@ const logSystemInformation = async () => {
 		].join("\n");
 		Log.info(systemDataString);
 
-		// Return is currently only for tests
 		return systemDataString;
 	} catch (error) {
 		Log.error(error);

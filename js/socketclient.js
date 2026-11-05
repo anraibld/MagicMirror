@@ -1,9 +1,7 @@
 import "./logger.js";
-// basepath.js is generated from the active config before the browser is served.
 import "../config/basepath.js";
 
-// eslint-disable-next-line import-x/no-unresolved -- Socket.IO serves this module at runtime.
-const socketIo = await import(/* @vite-ignore */ "/socket.io/socket.io.esm.min.js");
+const socketIo = await import( "/socket.io/socket.io.esm.min.js");
 const { io } = socketIo;
 
 if (typeof io !== "function") {
@@ -19,12 +17,11 @@ export const MMSocket = function (moduleName) {
 
 	this.moduleName = moduleName;
 
-	// Private Methods
 	const base = globalThis.config?.basePath ?? "/";
 	this.socket = io(`/${this.moduleName}`, {
 		path: `${base}socket.io`,
-		pingInterval: 120000, // send pings every 2 mins
-		pingTimeout: 120000 // wait up to 2 mins for a pong
+		pingInterval: 120000,
+		pingTimeout: 120000
 	});
 
 	let notificationCallback = () => {};
@@ -32,19 +29,17 @@ export const MMSocket = function (moduleName) {
 	const onevent = this.socket.onevent;
 	this.socket.onevent = (packet) => {
 		const args = packet.data || [];
-		onevent.call(this.socket, packet); // original call
+		onevent.call(this.socket, packet);
 		packet.data = ["*"].concat(args);
-		onevent.call(this.socket, packet); // additional call to catch-all
+		onevent.call(this.socket, packet);
 	};
 
-	// register catch all.
 	this.socket.on("*", (notification, payload) => {
 		if (notification !== "*") {
 			notificationCallback(notification, payload);
 		}
 	});
 
-	// Public Methods
 	this.setNotificationCallback = (callback) => {
 		notificationCallback = callback;
 	};
@@ -54,8 +49,6 @@ export const MMSocket = function (moduleName) {
 	};
 };
 
-// Legacy global bridge for third-party modules that reference io directly.
 globalThis.io = io;
 
-// Legacy global bridge for third-party modules that reference MMSocket directly.
 if (!globalThis.MMSocket) globalThis.MMSocket = MMSocket;

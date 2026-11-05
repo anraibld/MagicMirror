@@ -7,25 +7,10 @@ const Log = require("logger");
 
 const startUp = new Date();
 
-/**
- * Gets the startup time.
- * @param {Request} req - the request
- * @param {Response} res - the result
- */
 const getStartup = (req, res) => {
 	res.send(startUp);
 };
 
-/**
- * Replace `**SECRET_ABC**` placeholders with the value of `process.env.SECRET_ABC`.
- *
- * If `allowedSecrets` is given, only those secret names are restored and every
- * other placeholder is left untouched. Without it, all secrets are restored
- * (used by the CORS proxy, which only runs on the trusted server side).
- * @param {string} input - String that may contain `**SECRET_***` placeholders.
- * @param {Set<string>} [allowedSecrets] - Secret names that may be restored.
- * @returns {string} The input with the allowed placeholders replaced.
- */
 const replaceSecretPlaceholder = (input, allowedSecrets) => {
 	if (global.config.cors === "allowAll") {
 		if (input.includes("**SECRET_")) {
@@ -34,26 +19,14 @@ const replaceSecretPlaceholder = (input, allowedSecrets) => {
 		return input;
 	}
 	return input.replaceAll(/\*\*(SECRET_[^*]+)\*\*/g, (placeholder, secretName) => {
-		// Block replacing secrets that are not explicitly allowed.
 		if (allowedSecrets && !allowedSecrets.has(secretName)) {
 			return placeholder;
 		}
 
-		// Load the real value from the environment. Fallback to placeholder if missing.
 		return process.env[secretName] || placeholder;
 	});
 };
 
-/**
- * A method that forwards HTTP Get-methods to the internet to avoid CORS-errors.
- *
- * Example input request url: /cors?sendheaders=header1:value1,header2:value2&expectedheaders=header1,header2&url=http://www.test.com/path?param1=value1
- *
- * Only the url-param of the input request url is required. It must be the last parameter.
- * @param {Request} req - the request
- * @param {Response} res - the result
- * @returns {Promise<void>} A promise that resolves when the response is sent
- */
 const cors = async (req, res) => {
 	if (global.config.cors === "disabled") {
 		Log.error("CORS is disabled, you need to enable it in `config.js` by setting `cors` to `allowAll` or `allowWhitelist`");
@@ -72,7 +45,6 @@ const cors = async (req, res) => {
 			url = match[1];
 			if (typeof global.config !== "undefined") url = replaceSecretPlaceholder(url);
 
-			// Validate protocol before attempting connection (non-http/https are never allowed)
 			let parsed;
 			try {
 				parsed = new URL(url);
@@ -85,13 +57,11 @@ const cors = async (req, res) => {
 				return res.status(403).json({ error: "Forbidden: private or reserved addresses are not allowed" });
 			}
 
-			// Block localhost by hostname before even creating the dispatcher (no DNS needed).
 			if (parsed.hostname.toLowerCase() === "localhost") {
 				Log.warn(`SSRF blocked (localhost): ${url}`);
 				return res.status(403).json({ error: "Forbidden: private or reserved addresses are not allowed" });
 			}
 
-			// Whitelist check: if enabled, only allow explicitly listed domains
 			if (global.config.cors === "allowWhitelist" && !global.config.corsDomainWhitelist.includes(parsed.hostname.toLowerCase())) {
 				Log.warn(`CORS blocked (not in whitelist): ${url}`);
 				return res.status(403).json({ error: "Forbidden: domain not in corsDomainWhitelist" });
@@ -101,16 +71,12 @@ const cors = async (req, res) => {
 			const expectedReceivedHeaders = geExpectedReceivedHeaders(req.url);
 			Log.log(`cors url: ${url}`);
 
-			// Resolve DNS once and validate the IP. The validated IP is then pinned
-			// for the actual connection so fetch() cannot re-resolve to a different
-			// address. This prevents DNS rebinding / TOCTOU attacks (GHSA-xhvw-r95j-xm4v).
 			const { address, family } = await dns.promises.lookup(parsed.hostname);
 			if (ipaddr.process(address).range() !== "unicast") {
 				Log.warn(`SSRF blocked: ${url}`);
 				return res.status(403).json({ error: "Forbidden: private or reserved addresses are not allowed" });
 			}
 
-			// Pin the validated IP — fetch() reuses it instead of doing its own DNS lookup
 			const dispatcher = new undici.Agent({
 				connect: {
 					lookup: (_h, _o, cb) => {
@@ -140,11 +106,6 @@ const cors = async (req, res) => {
 	}
 };
 
-/**
- * Gets headers and values to attach to the web request.
- * @param {string} url - The url containing the headers and values to send.
- * @returns {object} An object specifying name and value of the headers.
- */
 const getHeadersToSend = (url) => {
 	const headersToSend = { "User-Agent": getUserAgent() };
 	const headersToSendMatch = new RegExp("sendheaders=(.+?)(&|$)", "g").exec(url);
@@ -161,11 +122,6 @@ const getHeadersToSend = (url) => {
 	return headersToSend;
 };
 
-/**
- * Gets the headers expected from the response.
- * @param {string} url - The url containing the expected headers from the response.
- * @returns {string[]} headers - The name of the expected headers.
- */
 const geExpectedReceivedHeaders = (url) => {
 	const expectedReceivedHeaders = ["Content-Type"];
 	const expectedReceivedHeadersMatch = new RegExp("expectedheaders=(.+?)(&|$)", "g").exec(url);
@@ -178,11 +134,6 @@ const geExpectedReceivedHeaders = (url) => {
 	return expectedReceivedHeaders;
 };
 
-/**
- * Gets the HTML to display the magic mirror.
- * @param {Request} req - the request
- * @param {Response} res - the result
- */
 const getHtml = (req, res) => {
 	let html = fs.readFileSync(path.resolve(`${global.root_path}/index.html`), { encoding: "utf8" });
 	html = html.replace("#VERSION#", global.version);
@@ -191,19 +142,10 @@ const getHtml = (req, res) => {
 	res.send(html);
 };
 
-/**
- * Gets the MagicMirror version.
- * @param {Request} req - the request
- * @param {Response} res - the result
- */
 const getVersion = (req, res) => {
 	res.send(global.version);
 };
 
-/**
- * Gets the preferred `User-Agent`
- * @returns {string} `User-Agent` to be used
- */
 const getUserAgent = () => {
 	const defaultUserAgent = `Mozilla/5.0 (Node.js ${Number(process.version.match(/^v(\d+\.\d+)/)[1])}) MagicMirror/${global.version}`;
 
@@ -221,10 +163,6 @@ const getUserAgent = () => {
 	}
 };
 
-/**
- * Gets environment variables needed in the browser.
- * @returns {object} environment variables key: values
- */
 const getEnvVarsAsObj = () => {
 	const obj = { modulesDir: `${global.config.foreignModulesDir}`, defaultModulesDir: `${global.config.defaultModulesDir}`, customCss: `${global.config.customCss}` };
 	if (process.env.MM_MODULES_DIR) {
@@ -237,37 +175,20 @@ const getEnvVarsAsObj = () => {
 	return obj;
 };
 
-/**
- * Gets environment variables needed in the browser.
- * @param {Request} req - the request
- * @param {Response} res - the result
- */
 const getEnvVars = (req, res) => {
 	const obj = getEnvVarsAsObj();
 	res.send(obj);
 };
 
-/**
- * Resolves the HTTP server port. The `MM_PORT` environment variable takes
- * precedence over the configured port, falling back to 8080.
- * @param {object} [config] the configuration to read the port from (defaults to global.config)
- * @returns {number} the port the server should listen on
- */
 const getServerPort = (config = global.config) => {
 	return Number(process.env.MM_PORT || config?.port || 8080);
 };
 
-/**
- * Get the config file path from environment or default location
- * @returns {string} The absolute config file path
- */
 const getConfigFilePath = () => {
-	// Ensure root_path is set (for standalone contexts like watcher)
 	if (!global.root_path) {
 		global.root_path = path.resolve(`${__dirname}/../`);
 	}
 
-	// Check environment variable if global not set
 	if (!global.configuration_file && process.env.MM_CONFIG_FILE) {
 		global.configuration_file = process.env.MM_CONFIG_FILE;
 	}

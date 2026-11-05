@@ -3,11 +3,6 @@ const { getSunTimes, isDayTime, getDateString, convertKmhToMs, cardinalToDegrees
 const WeatherProvider = require("../weatherprovider");
 const HTTPFetcher = require("#http_fetcher");
 
-/**
- * Server-side weather provider for Weather.gov (US National Weather Service)
- * Note: Only works for US locations, no API key required
- * https://weather-gov.github.io/api/general-faqs
- */
 class WeatherGovProvider extends WeatherProvider {
 	constructor (config) {
 		super();
@@ -23,7 +18,6 @@ class WeatherGovProvider extends WeatherProvider {
 		this.initRetryCount = 0;
 		this.initRetryTimer = null;
 
-		// Weather.gov specific URLs (fetched during initialization)
 		this.forecastURL = null;
 		this.forecastHourlyURL = null;
 		this.forecastGridDataURL = null;
@@ -32,20 +26,17 @@ class WeatherGovProvider extends WeatherProvider {
 	}
 
 	async initialize () {
-		// Add small random delay to prevent all instances from starting simultaneously
-		// This reduces parallel DNS lookups which can cause EAI_AGAIN errors
-		const staggerDelay = Math.random() * 3000; // 0-3 seconds
+		const staggerDelay = Math.random() * 3000;
 		await new Promise((resolve) => setTimeout(resolve, staggerDelay));
 
 		try {
 			await this.#fetchWeatherGovURLs();
 			this.#initializeFetcher();
-			this.initRetryCount = 0; // Reset on success
+			this.initRetryCount = 0;
 		} catch (error) {
 			const errorInfo = this.#categorizeError(error);
 			Log.error(`[weathergov] Initialization failed: ${errorInfo.message}`);
 
-			// Retry on temporary errors (DNS, timeout, network)
 			if (errorInfo.isRetryable && this.initRetryCount < 5) {
 				this.initRetryCount++;
 				const delay = HTTPFetcher.calculateBackoffDelay(this.initRetryCount);
@@ -96,11 +87,10 @@ class WeatherGovProvider extends WeatherProvider {
 	}
 
 	async #fetchWeatherGovURLs () {
-		// Step 1: Get grid point data
 		const pointsUrl = `${this.config.apiBase}${this.config.lat},${this.config.lon}`;
 
 		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout - DNS can be slow
+		const timeoutId = setTimeout(() => controller.abort(), 120000);
 
 		try {
 			const pointsResponse = await fetch(pointsUrl, {
@@ -121,19 +111,16 @@ class WeatherGovProvider extends WeatherProvider {
 				throw new Error("Invalid grid point data");
 			}
 
-			// Extract location name
 			const relLoc = pointsData.properties.relativeLocation?.properties;
 			if (relLoc) {
 				this.locationName = `${relLoc.city}, ${relLoc.state}`;
 			}
 
-			// Store forecast URLs
 			this.forecastURL = `${pointsData.properties.forecast}?units=si`;
 			this.forecastHourlyURL = `${pointsData.properties.forecastHourly}?units=si`;
 			this.forecastGridDataURL = pointsData.properties.forecastGridData;
 			this.observationStationsURL = pointsData.properties.observationStations;
 
-			// Step 2: Get observation station URL
 			const stationsResponse = await fetch(this.observationStationsURL, {
 				signal: controller.signal,
 				headers: {
@@ -181,7 +168,7 @@ class WeatherGovProvider extends WeatherProvider {
 		this._createJSONFetcher({
 			url,
 			reloadInterval: this.config.updateInterval,
-			timeout: 60000, // 60 seconds - weather.gov can be slow
+			timeout: 60000,
 			headers: {
 				"User-Agent": "MagicMirror",
 				Accept: "application/geo+json",
@@ -238,14 +225,13 @@ class WeatherGovProvider extends WeatherProvider {
 
 		current.date = new Date(currentWeatherData.timestamp);
 		current.temperature = currentWeatherData.temperature.value;
-		current.windSpeed = currentWeatherData.windSpeed.value; // Observations are already in m/s
+		current.windSpeed = currentWeatherData.windSpeed.value;
 		current.windFromDirection = currentWeatherData.windDirection.value;
 		current.minTemperature = currentWeatherData.minTemperatureLast24Hours?.value;
 		current.maxTemperature = currentWeatherData.maxTemperatureLast24Hours?.value;
 		current.humidity = Math.round(currentWeatherData.relativeHumidity.value);
 		current.precipitationAmount = currentWeatherData.precipitationLastHour?.value ?? currentWeatherData.precipitationLast3Hours?.value;
 
-		// Feels like temperature
 		if (currentWeatherData.heatIndex.value !== null) {
 			current.feelsLikeTemp = currentWeatherData.heatIndex.value;
 		} else if (currentWeatherData.windChill.value !== null) {
@@ -254,12 +240,10 @@ class WeatherGovProvider extends WeatherProvider {
 			current.feelsLikeTemp = currentWeatherData.temperature.value;
 		}
 
-		// Calculate sunrise/sunset (not provided by weather.gov)
 		const { sunrise, sunset } = getSunTimes(current.date, this.config.lat, this.config.lon);
 		current.sunrise = sunrise;
 		current.sunset = sunset;
 
-		// Determine if daytime
 		const isDay = isDayTime(current.date, current.sunrise, current.sunset);
 		current.weatherType = this.#convertWeatherType(currentWeatherData.textDescription, isDay);
 
@@ -278,7 +262,6 @@ class WeatherGovProvider extends WeatherProvider {
 			const dateStr = getDateString(forecastDate);
 
 			if (date !== dateStr) {
-				// New day
 				if (date !== "") {
 					weather.minTemperature = Math.min(...minTemp);
 					weather.maxTemperature = Math.max(...maxTemp);
@@ -295,7 +278,6 @@ class WeatherGovProvider extends WeatherProvider {
 				weather.weatherType = this.#convertWeatherType(forecast.shortForecast, forecast.isDaytime);
 			}
 
-			// Update weather type for daytime hours (8am-5pm)
 			const hour = forecastDate.getHours();
 			if (hour >= 8 && hour <= 17) {
 				weather.weatherType = this.#convertWeatherType(forecast.shortForecast, forecast.isDaytime);
@@ -305,7 +287,6 @@ class WeatherGovProvider extends WeatherProvider {
 			maxTemp.push(forecast.temperature);
 		}
 
-		// Last day
 		if (date !== "") {
 			weather.minTemperature = Math.min(...minTemp);
 			weather.maxTemperature = Math.max(...maxTemp);
@@ -323,7 +304,6 @@ class WeatherGovProvider extends WeatherProvider {
 
 			weather.date = new Date(forecast.startTime);
 
-			// Parse wind speed
 			const windSpeedStr = forecast.windSpeed;
 			let windSpeed = windSpeedStr;
 			if (windSpeedStr.includes(" ")) {
@@ -342,7 +322,6 @@ class WeatherGovProvider extends WeatherProvider {
 	}
 
 	#convertWeatherType (weatherType, isDaytime) {
-		// https://w1.weather.gov/xml/current_obs/weather.php
 
 		if (weatherType.includes("Cloudy") || weatherType.includes("Partly")) {
 			return isDaytime ? "day-cloudy" : "night-cloudy";

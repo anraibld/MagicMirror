@@ -3,16 +3,9 @@ const path = require("node:path");
 const weatherUtils = require("../../../defaultmodules/weather/provider-utils");
 const helpers = require("./global-setup");
 
-/**
- * Inject mock weather data directly via socket communication
- * This bypasses the weather provider and tests only client-side rendering
- * @param {object} page - Playwright page
- * @param {string} mockDataFile - Filename of mock data
- */
 const injectMockWeatherData = async (page, mockDataFile) => {
 	const rawData = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../mocks", mockDataFile)).toString());
 
-	// Validate that the fixture has at least one expected weather data type
 	if (!rawData.current && !rawData.daily && !rawData.hourly) {
 		throw new Error(
 			"Invalid weather fixture: missing current, daily, and hourly data. "
@@ -20,7 +13,6 @@ const injectMockWeatherData = async (page, mockDataFile) => {
 		);
 	}
 
-	// Determine weather type from the mock data structure
 	let type = "current";
 	let data = null;
 
@@ -28,7 +20,6 @@ const injectMockWeatherData = async (page, mockDataFile) => {
 
 	if (rawData.current) {
 		type = "current";
-		// Mock what the provider would send for current weather
 		data = {
 			date: weatherUtils.applyTimezoneOffset(new Date(rawData.current.dt * 1000), timezoneOffset),
 			windSpeed: rawData.current.wind_speed,
@@ -66,17 +57,13 @@ const injectMockWeatherData = async (page, mockDataFile) => {
 		}));
 	}
 
-	// Inject weather data by evaluating code in the browser context
 	await page.evaluate(({ type, data }) => {
-		// Find the weather module instance
 		const weatherModule = MM.getModules().find((m) => m.name === "weather");
 		if (weatherModule) {
-			// Send INITIALIZED first
 			weatherModule.socketNotificationReceived("WEATHER_INITIALIZED", {
 				instanceId: weatherModule.instanceId,
 				locationName: "Munich"
 			});
-			// Then send the actual data
 			weatherModule.socketNotificationReceived("WEATHER_DATA", {
 				instanceId: weatherModule.instanceId,
 				type: type,
@@ -90,15 +77,10 @@ exports.startApplication = async (configFileName, mockDataFile) => {
 	await helpers.startApplication(configFileName);
 	await helpers.getDocument();
 
-	// If mock data file is provided, inject it
 	if (mockDataFile) {
 		const page = helpers.getPage();
-		// Wait for weather module to initialize
-		// eslint-disable-next-line playwright/no-wait-for-selector
 		await page.waitForSelector(".weather", { timeout: 5000 });
 		await injectMockWeatherData(page, mockDataFile);
-		// Wait for data to be rendered
-		// eslint-disable-next-line playwright/no-wait-for-selector
 		await page.waitForSelector(".weather .weathericon", { timeout: 2000 });
 	}
 };

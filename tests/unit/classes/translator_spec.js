@@ -8,10 +8,6 @@ const {
 	resetTranslatorState
 } = require("../../utils/translation_test_environment");
 
-/**
- * Create a fresh Translator state for each test.
- * @returns {Promise<object>} Shared Translator singleton with cleared state
- */
 const getFreshTranslator = async () => {
 	setupTranslationTestEnvironment(3001);
 	const { Translator } = await import(TRANSLATOR_MODULE_URL);
@@ -90,9 +86,6 @@ describe("Translator", () => {
 			Fallback: "core fallback"
 		};
 
-		/**
-		 * @param {object} Translator the global Translator object
-		 */
 		const setTranslations = (Translator) => {
 			Translator.translations = translations;
 			Translator.coreTranslations = coreTranslations;

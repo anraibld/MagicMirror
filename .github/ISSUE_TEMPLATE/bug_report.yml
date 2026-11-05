@@ -19,10 +19,6 @@ body:
         Optimal would be the systeminformation from the logs, which looks like this:
         ```bash
         [2025-01-14 20:05:03.529] [INFO]  System information:
-        ### SYSTEM:    manufacturer: Raspberry Pi Foundation; model: Raspberry Pi 4 Model B Rev 1.5; virtual: false
-        ### OS:        platform: linux; distro: Debian GNU/Linux; release: 12; arch: arm64; kernel: 6.1.21-v8+
-        ### VERSIONS:  electron: 31.2.1; used node: 20.15.0; installed node: 22.4.1; npm: 10.8.1; pm2:
-        ### OTHER:     timeZone: Europe/Berlin; ELECTRON_ENABLE_GPU: undefined
         ```
 
         If you can't provide this information, please provide the following:

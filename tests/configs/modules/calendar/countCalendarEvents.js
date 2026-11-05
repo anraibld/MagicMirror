@@ -12,7 +12,7 @@ const config = {
 				maximumEntries: 1,
 				calendars: [
 					{
-						fetchInterval: 10000, //7 * 24 * 60 * 60 * 1000,
+						fetchInterval: 10000,
 						symbol: ["calendar-check", "google"],
 						url: "http://localhost:8080/tests/mocks/12_events.ics"
 					}
@@ -33,7 +33,6 @@ const config = {
 	]
 };
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = config;
 }

@@ -4,14 +4,7 @@ const delay = (time) => {
 	return new Promise((resolve) => setTimeout(resolve, time));
 };
 
-/**
- * Run clientonly with given arguments and return result
- * @param {string[]} args command line arguments
- * @param {object} env environment variables to merge (replaces process.env)
- * @returns {object} result with status and stderr
- */
 const runClientOnly = (args = [], env = {}) => {
-	// Start with minimal env and merge provided env
 	const testEnv = {
 		PATH: process.env.PATH,
 		NODE_PATH: process.env.NODE_PATH,
@@ -100,7 +93,6 @@ describe("Clientonly parameter handling", () => {
 
 		it("should accept valid port 8080", () => {
 			const result = runClientOnly(["--address", "192.168.1.10", "--port", "8080"]);
-			// Should not fail on port validation (will fail on connection or display)
 			expect(result.stderr).not.toContain("Invalid port number");
 		});
 
@@ -116,29 +108,21 @@ describe("Clientonly parameter handling", () => {
 	});
 
 	describe("TLS flag parsing", () => {
-		// Note: These tests verify the flag is parsed, not the actual connection behavior
-		// Connection tests would timeout as they try to reach unreachable addresses
 
 		it("should not fail on port validation when using --use-tls", () => {
-			// Verify --use-tls doesn't interfere with other parameter parsing
 			const result = runClientOnly(["--address", "192.168.1.10", "--port", "443", "--use-tls"]);
 			expect(result.stderr).not.toContain("Invalid port number");
 		});
 
 		it("should accept --use-tls flag with valid parameters", () => {
 			const result = runClientOnly(["--address", "192.168.1.10", "--port", "443", "--use-tls"]);
-			// Should not fail on parameter parsing (will fail on connection or display)
 			expect(result.stderr).not.toContain("Usage:");
 		});
 	});
 
 	describe("Display environment check", () => {
 		it("should fail without DISPLAY or WAYLAND_DISPLAY when connecting to valid server", () => {
-			// This test needs a running server to get past the connection phase
-			// Without DISPLAY, it should fail with display error
-			// For now, we just verify it fails (connection error comes first without server)
 			const result = runClientOnly(["--address", "192.168.1.10", "--port", "1"]);
-			// Either exits with code 1 or times out (null status means killed/timeout)
 			expect(result.status === 1 || result.status === null).toBe(true);
 		});
 	});
@@ -155,7 +139,6 @@ describe("Clientonly with running server", () => {
 			env: process.env,
 			detached: true
 		});
-		// Wait for server to start
 		await delay(2000);
 	});
 
@@ -164,7 +147,6 @@ describe("Clientonly with running server", () => {
 			try {
 				process.kill(-serverProcess.pid);
 			} catch {
-				// Process may already be dead
 			}
 		}
 	});

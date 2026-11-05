@@ -3,7 +3,6 @@ const os = require("node:os");
 const fs = require("node:fs");
 const { chromium } = require("playwright");
 
-// global absolute root path
 global.root_path = path.resolve(`${__dirname}/../../../`);
 
 const indexFile = `${global.root_path}/index.html`;
@@ -23,21 +22,16 @@ let browser;
 let context;
 let page;
 
-/**
- * Ensure Playwright browser and context are available.
- * @returns {Promise<void>}
- */
 const ensureContext = async () => {
 	if (!browser) {
-		// Additional args for CI stability to prevent crashes
 		const launchOptions = {
 			headless: true,
 			args: [
-				"--disable-dev-shm-usage", // Overcome limited resource problems in Docker/CI
-				"--disable-gpu", // Disable GPU hardware acceleration
-				"--no-sandbox", // Required for running as root in some CI environments
+				"--disable-dev-shm-usage",
+				"--disable-gpu",
+				"--no-sandbox",
 				"--disable-setuid-sandbox",
-				"--single-process" // Run in single process mode for better stability in CI
+				"--single-process"
 			]
 		};
 		browser = await chromium.launch(launchOptions);
@@ -47,11 +41,6 @@ const ensureContext = async () => {
 	}
 };
 
-/**
- * Open a fresh page pointing to the provided url.
- * @param {string} url target url
- * @returns {Promise<import('playwright').Page>} initialized page instance
- */
 const openPage = async (url) => {
 	await ensureContext();
 	if (page) {
@@ -62,10 +51,6 @@ const openPage = async (url) => {
 	return page;
 };
 
-/**
- * Close page, context and browser if they exist.
- * @returns {Promise<void>}
- */
 const closeBrowser = async () => {
 	if (page) {
 		await page.close();
@@ -91,7 +76,6 @@ exports.getPage = () => {
 exports.startApplication = async (configFilename) => {
 	vi.resetModules();
 
-	// Clear Node's require cache for config and app files to prevent stale configs and middlewares
 	Object.keys(require.cache).forEach((key) => {
 		if (
 			key.includes("/tests/configs/")
@@ -107,11 +91,9 @@ exports.startApplication = async (configFilename) => {
 		await exports.stopApplication();
 	}
 
-	// Use MM_PORT if preset by a test, otherwise default to 8080.
 	const port = Number(process.env.MM_PORT) || 8080;
 	global.testPort = port;
 
-	// Set config sample for use in test
 	let configPath;
 	if (configFilename === "") {
 		configPath = "config/config.js";
@@ -121,7 +103,6 @@ exports.startApplication = async (configFilename) => {
 
 	process.env.MM_CONFIG_FILE = configPath;
 
-	// Ensure MM_PORT is set before app loads
 	process.env.MM_PORT = port.toString();
 
 	process.env.mmTestMode = "true";
@@ -144,7 +125,6 @@ exports.stopApplication = async (waitTime = 100) => {
 	delete global.testPort;
 	delete process.env.MM_PORT;
 
-	// Wait for any pending async operations to complete before closing DOM
 	await new Promise((resolve) => setTimeout(resolve, waitTime));
 };
 
@@ -157,32 +137,22 @@ exports.getDocument = async () => {
 };
 
 exports.fixupIndex = async () => {
-	// read and save the git level index file
 	indexData = (await fs.promises.readFile(indexFile)).toString();
-	// make lines of the content
 	const workIndexLines = indexData.split(os.EOL);
-	// loop thru the lines to find place to insert new region
 	for (const l in workIndexLines) {
 		if (workIndexLines[l].includes("region top right")) {
-			// insert a new line with new region definition
 			workIndexLines.splice(l, 0, "      <div class=\"region row3 left\"><div class=\"container\"></div></div>");
 			break;
 		}
 	}
-	// write out the new index.html file, not append
 	await fs.promises.writeFile(indexFile, workIndexLines.join(os.EOL), { flush: true });
-	// read in the current custom.css
 	cssData = (await fs.promises.readFile(cssFile)).toString();
-	// write out the custom.css for this testcase, matching the new region name
 	await fs.promises.writeFile(cssFile, sampleCss.join(os.EOL), { flush: true });
 };
 
 exports.restoreIndex = async () => {
-	// if we read in data
 	if (indexData.length > 0) {
-		//write out saved index.html
 		await fs.promises.writeFile(indexFile, indexData, { flush: true });
-		// write out saved custom.css
 		await fs.promises.writeFile(cssFile, cssData, { flush: true });
 	}
 };

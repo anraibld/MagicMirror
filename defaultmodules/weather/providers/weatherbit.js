@@ -1,10 +1,6 @@
 const Log = require("logger");
 const WeatherProvider = require("../weatherprovider");
 
-/**
- * Weatherbit weather provider
- * See: https://www.weatherbit.io/
- */
 class WeatherbitProvider extends WeatherProvider {
 	constructor (config) {
 		super();
@@ -118,7 +114,6 @@ class WeatherbitProvider extends WeatherProvider {
 			sunset: null
 		};
 
-		// Parse sunrise/sunset from HH:mm format (already in local time)
 		if (current.sunrise) {
 			const [hours, minutes] = current.sunrise.split(":");
 			const sunrise = new Date(current.ts * 1000);
@@ -171,12 +166,6 @@ class WeatherbitProvider extends WeatherProvider {
 		return hours;
 	}
 
-	/**
-	 * Convert Weatherbit icon codes to weathericons.css icons
-	 * See: https://www.weatherbit.io/api/codes
-	 * @param {string} weatherType - Weatherbit icon code
-	 * @returns {string|null} Weathericons.css icon name or null
-	 */
 	#convertWeatherType (weatherType) {
 		const weatherTypes = {
 			t01d: "day-thunderstorm",

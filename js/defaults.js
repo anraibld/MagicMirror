@@ -2,18 +2,18 @@ const defaults = {
 	address: "localhost",
 	port: 8080,
 	basePath: "/",
-	useHttps: false, // Support HTTPS or not, default "false" will use HTTP
-	httpsPrivateKey: "", // HTTPS private key path, only required when useHttps is true
-	httpsCertificate: "", // HTTPS Certificate path, only required when useHttps is true
-	tls: null, // Legacy compatibility option for Electron URL selection (prefer useHttps)
+	useHttps: false,
+	httpsPrivateKey: "",
+	httpsCertificate: "",
+	tls: null,
 	electronOptions: {},
 	electronSwitches: [],
-	ignoreXOriginHeader: false, // Remove X-Frame-Options response header in Electron
-	ignoreContentSecurityPolicy: false, // Remove Content-Security-Policy response header in Electron
+	ignoreXOriginHeader: false,
+	ignoreContentSecurityPolicy: false,
 	ipWhitelist: ["127.0.0.1", "::ffff:127.0.0.1", "::1"],
-	trustedProxies: [],	// Only needed behind a reverse proxy.
-	cors: "disabled", // or "allowAll" or "allowWhitelist"
-	corsDomainWhitelist: [], // example: ["api.mapbox.com"]
+	trustedProxies: [],
+	cors: "disabled",
+	corsDomainWhitelist: [],
 	watchTargets: [],
 
 	language: "en",
@@ -24,12 +24,8 @@ const defaults = {
 	customCss: "config/custom.css",
 	foreignModulesDir: "modules",
 	defaultModulesDir: "defaultmodules",
-	// httpHeaders used by helmet, see https://helmetjs.github.io/. You can add other/more object values by overriding this in config.js,
-	// e.g. you need to add `frameguard: false` for embedding MagicMirror in another website, see https://github.com/MagicMirrorOrg/MagicMirror/issues/2847
 	httpHeaders: { contentSecurityPolicy: false, crossOriginOpenerPolicy: false, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: false, originAgentCluster: false },
 
-	// properties for checking if server is alive and has same startup-timestamp, the check is per default enabled
-	// (interval 30 seconds). If startup-timestamp has changed the client reloads the magicmirror webpage.
 	checkServerInterval: 30 * 1000,
 	reloadAfterServerRestart: false,
 
@@ -80,7 +76,6 @@ const defaults = {
 	]
 };
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = defaults;
 }

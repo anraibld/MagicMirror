@@ -1,4 +1,3 @@
-// Load lightweight internal alias resolver to enable require("logger")
 require("../js/alias-resolver");
 
 const { spawn } = require("node:child_process");
@@ -20,10 +19,6 @@ let isRestarting = false;
 let serverConfig = null;
 const rootDir = path.join(__dirname, "..");
 
-/**
- * Get the server configuration (port and address)
- * @returns {{port: number, address: string}} The server config
- */
 const getServerConfig = () => {
 	if (serverConfig) return serverConfig;
 
@@ -42,11 +37,6 @@ const getServerConfig = () => {
 	return serverConfig;
 };
 
-/**
- * Check if a port is available on the configured address
- * @param {number} port The port to check
- * @returns {Promise<boolean>} True if port is available
- */
 const isPortAvailable = (port) => {
 	return new Promise((resolve) => {
 		const server = net.createServer();
@@ -60,18 +50,11 @@ const isPortAvailable = (port) => {
 			resolve(true);
 		});
 
-		// Use the same address as the actual server will bind to
 		const { address } = getServerConfig();
 		server.listen(port, address);
 	});
 };
 
-/**
- * Wait until port is available
- * @param {number} port The port to wait for
- * @param {number} maxAttempts Maximum number of attempts
- * @returns {Promise<void>}
- */
 const waitForPort = async (port, maxAttempts = PORT_CHECK_MAX_ATTEMPTS) => {
 	for (let i = 0; i < maxAttempts; i++) {
 		if (await isPortAvailable(port)) {
@@ -83,11 +66,7 @@ const waitForPort = async (port, maxAttempts = PORT_CHECK_MAX_ATTEMPTS) => {
 	Log.warn(`Port ${port} still not available after ${maxAttempts} attempts`);
 };
 
-/**
- * Start the server process
- */
 const startServer = () => {
-	// Start node directly instead of via npm to avoid process tree issues
 	child = spawn("node", ["./serveronly"], {
 		stdio: "inherit",
 		cwd: path.join(__dirname, "..")
@@ -106,18 +85,13 @@ const startServer = () => {
 		}
 
 		if (isRestarting) {
-			// Expected restart - don't log as error
 			isRestarting = false;
 		} else {
-			// Unexpected exit
 			Log.error(`Server exited unexpectedly with code ${code} and signal ${signal}`);
 		}
 	});
 };
 
-/**
- * Send reload notification to all connected clients
- */
 const notifyClientsToReload = () => {
 	const { port, address } = getServerConfig();
 	const options = {
@@ -134,17 +108,12 @@ const notifyClientsToReload = () => {
 	});
 
 	req.on("error", (err) => {
-		// Server might not be running yet, ignore
 		Log.debug(`Could not send reload notification: ${err.message}`);
 	});
 
 	req.end();
 };
 
-/**
- * Restart the server process
- * @param {string} reason The reason for the restart
- */
 const restartServer = (reason) => {
 	if (restartTimer) clearTimeout(restartTimer);
 
@@ -154,17 +123,12 @@ const restartServer = (reason) => {
 		if (child) {
 			isRestarting = true;
 
-			// Get the actual port being used
 			const { port } = getServerConfig();
 
-			// Notify clients to reload before restart
 			notifyClientsToReload();
 
-			// Set up one-time listener for the exit event
 			child.once("exit", async () => {
-				// Wait until port is actually available
 				await waitForPort(port);
-				// Reset config cache in case it changed
 				serverConfig = null;
 				startServer();
 			});
@@ -176,18 +140,12 @@ const restartServer = (reason) => {
 	}, RESTART_DELAY_MS);
 };
 
-/**
- * Watch a specific file for changes and restart the server on change
- * Watches the parent directory to handle editors that use atomic writes
- * @param {string} file The file path to watch
- */
 const watchFile = (file) => {
 	try {
 		const fileName = path.basename(file);
 		const dirName = path.dirname(file);
 
 		const watcher = fs.watch(dirName, (_eventType, changedFile) => {
-			// Only trigger for the specific file we're interested in
 			if (changedFile !== fileName) return;
 
 			Log.info(`[watchFile] Change detected in: ${file}`);
@@ -211,7 +169,6 @@ const watchFile = (file) => {
 
 startServer();
 
-// Setup file watching based on config
 try {
 	const configPath = getConfigFilePath();
 	delete require.cache[require.resolve(configPath)];
@@ -228,19 +185,16 @@ try {
 
 	Log.log(`Watch mode enabled. Watching ${watchTargets.length} file(s)`);
 
-	// Watch each target file
 	for (const target of watchTargets) {
 		const targetPath = path.isAbsolute(target)
 			? target
 			: path.join(rootDir, target);
 
-		// Check if file exists
 		if (!fs.existsSync(targetPath)) {
 			Log.warn(`Watch target does not exist: ${targetPath}`);
 			continue;
 		}
 
-		// Check if it's a file (directories are not supported)
 		const stats = fs.statSync(targetPath);
 		if (stats.isFile()) {
 			watchFile(targetPath);
@@ -249,7 +203,6 @@ try {
 		}
 	}
 } catch {
-	// Config file might not exist or be invalid, use fallback targets
 	Log.warn("Could not load watchTargets from config.");
 }
 

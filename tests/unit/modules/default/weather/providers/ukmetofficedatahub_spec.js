@@ -1,8 +1,3 @@
-/**
- * UK Met Office DataHub Weather Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
@@ -14,11 +9,6 @@ const UKMETOFFICE_HOURLY_URL = "https://data.hub.api.metoffice.gov.uk/sitespecif
 const UKMETOFFICE_THREE_HOURLY_URL = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/three-hourly*";
 const UKMETOFFICE_DAILY_URL = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/daily*";
 
-/**
- * Returns a copy of the daily mock response with dates shifted to today and future days.
- * @param {object} source Source UK Met Office daily mock payload.
- * @returns {object} Cloned payload with deterministic future dates in `timeSeries`.
- */
 const withFutureDailyTimes = (source) => {
 	const clone = JSON.parse(JSON.stringify(source));
 	const today = new Date();

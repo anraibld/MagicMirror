@@ -15,7 +15,6 @@ describe("Display of modules", () => {
 	});
 
 	it("should show the test header", async () => {
-		// textContent returns lowercase here, the uppercase is realized by CSS, which therefore does not end up in textContent
 		await expect(page.locator("#module_0_helloworld .module-header")).toHaveText("test_header");
 	});
 

@@ -1,9 +1,3 @@
-/*
- * MagicMirror² Test config for fullday calendar entries over multiple days
- *
- * By Paranoid93 https://github.com/Paranoid93/
- * MIT Licensed.
- */
 const config = {
 	address: "0.0.0.0",
 	ipWhitelist: [],
@@ -25,7 +19,6 @@ const config = {
 	]
 };
 
-/*************** DO NOT EDIT THE LINE BELOW ***************/
 if (typeof module !== "undefined") {
 	module.exports = config;
 }

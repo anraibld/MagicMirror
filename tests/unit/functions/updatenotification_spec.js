@@ -1,12 +1,5 @@
 import { vi, describe, beforeEach, afterEach, it, expect } from "vitest";
 
-/**
- * Creates a fresh GitHelper instance with isolated mocks for each test run.
- * @param {{ current: import("vitest").Mock | null }} fsStatSyncMockRef reference to the mocked fs.statSync.
- * @param {{ current: { error: import("vitest").Mock; info: import("vitest").Mock } | null }} loggerMockRef reference to logger stubs.
- * @param {{ current: import("vitest").MockInstance | null }} execGitSpyRef reference to the execGit spy.
- * @returns {Promise<unknown>} resolved GitHelper instance.
- */
 const createGitHelper = async (fsStatSyncMockRef, loggerMockRef, execGitSpyRef) => {
 	vi.resetModules();
 

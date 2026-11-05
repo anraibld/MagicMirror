@@ -13,9 +13,6 @@ const vendor = require("./vendor");
 
 const { getHtml, getVersion, getEnvVars, getServerPort, cors } = require("#server_functions");
 
-/**
- * Server
- */
 class Server {
 	#configObj;
 
@@ -29,9 +26,6 @@ class Server {
 
 	#server = null;
 
-	/**
-	 * @param {object} configObj The MM config full and redacted
-	 */
 	constructor (configObj) {
 		this.#configObj = configObj;
 		this.#config = configObj.fullConf;
@@ -39,10 +33,6 @@ class Server {
 		this.#port = getServerPort(this.#config);
 	}
 
-	/**
-	 * Opens the server for incoming connections
-	 * @returns {Promise} A promise that is resolved when the server listens to connections
-	 */
 	open () {
 		const config = this.#config;
 		const app = this.#app;
@@ -63,8 +53,8 @@ class Server {
 			const io = socketio(this.#server, {
 				allowRequest: socketIpAccessControl(config.ipWhitelist, config.trustedProxies),
 				allowEIO3: true,
-				pingInterval: 120000, // server → client ping every 2 mins
-				pingTimeout: 120000 // wait up to 2 mins for client pong
+				pingInterval: 120000,
+				pingTimeout: 120000
 			});
 
 			this.#server.on("connection", (socket) => {
@@ -76,7 +66,6 @@ class Server {
 
 			Log.log(`Starting server on port ${port} ... `);
 
-			// Add explicit error handling BEFORE calling listen so we can give user-friendly feedback
 			this.#server.once("error", (err) => {
 				if (err && err.code === "EADDRINUSE") {
 					const bindAddr = config.address || "localhost";
@@ -131,10 +120,6 @@ class Server {
 
 			const getConfig = (req, res) => {
 				const obj = configObj.redactedConf;
-				// Functions can't survive JSON.stringify, so we wrap them in a
-				// tagged object { __mmFunction: "<source>" }. The client-side
-				// JSON reviver in main.js recognises this tag and reconstructs
-				// the live function from the source string.
 				const jsonString = JSON.stringify(obj, (key, value) => {
 					if (typeof value === "function") {
 						return { __mmFunction: value.toString() };
@@ -157,7 +142,6 @@ class Server {
 
 			app.get("/", (req, res) => getHtml(req, res));
 
-			// Reload endpoint for watch mode - triggers browser reload
 			app.get("/reload", (req, res) => {
 				Log.info("Reload request received, notifying all clients");
 				io.emit("RELOAD");
@@ -173,10 +157,6 @@ class Server {
 		});
 	}
 
-	/**
-	 * Closes the server and destroys all lingering connections to it.
-	 * @returns {Promise} A promise that resolves when server has successfully shut down
-	 */
 	close () {
 		return new Promise((resolve) => {
 			for (const socket of this.#serverSockets.values()) {

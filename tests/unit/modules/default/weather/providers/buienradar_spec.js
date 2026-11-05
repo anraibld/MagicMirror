@@ -1,19 +1,9 @@
-/**
- * Buienradar Provider Tests
- *
- * Tests data parsing for current, forecast, and hourly weather types.
- * Buienradar covers NL/BE only, metric system, no API key required.
- */
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
 
 const BUIENRADAR_URL = "https://forecast.buienradar.nl/2.0/forecast/*";
 
-/**
- * Builds a stable Buienradar mock payload for parsing tests.
- * @returns {object} Buienradar forecast response fixture.
- */
 const buildBuienradarResponse = () => {
 	const today = "2100-01-01";
 	const tomorrow = "2100-01-02";

@@ -1,14 +1,13 @@
-/* global NotificationFx */
 
 Module.register("alert", {
 	alerts: {},
 
 	defaults: {
-		effect: "slide", // scale|slide|genie|jelly|flip|bouncyflip|exploader
-		alert_effect: "jelly", // scale|slide|genie|jelly|flip|bouncyflip|exploader
-		display_time: 3500, // time a notification is displayed in seconds
+		effect: "slide",
+		alert_effect: "jelly",
+		display_time: 3500,
 		position: "center",
-		welcome_message: false // shown at startup
+		welcome_message: false
 	},
 
 	getScripts () {
@@ -60,19 +59,16 @@ Module.register("alert", {
 	},
 
 	async showAlert (alert, sender) {
-		// If module already has an open alert close it
 		if (this.alerts[sender.name]) {
 			this.hideAlert(sender, false);
 		}
 
-		// Add overlay
 		if (!Object.keys(this.alerts).length) {
 			this.toggleBlur(true);
 		}
 
 		const message = await this.renderMessage(alert.templateName || "alert", alert);
 
-		// Store alert in this.alerts
 		this.alerts[sender.name] = new NotificationFx({
 			message,
 			effect: this.config.alert_effect,
@@ -81,10 +77,8 @@ Module.register("alert", {
 			boxClassName: "ns-alert"
 		});
 
-		// Show alert
 		this.alerts[sender.name].show();
 
-		// Add timer to dismiss alert and overlay
 		if (alert.timer) {
 			setTimeout(() => {
 				this.hideAlert(sender);
@@ -93,11 +87,9 @@ Module.register("alert", {
 	},
 
 	hideAlert (sender, close = true) {
-		// Dismiss alert and remove from this.alerts
 		if (this.alerts[sender.name]) {
 			this.alerts[sender.name].dismiss(close);
 			delete this.alerts[sender.name];
-			// Remove overlay
 			if (!Object.keys(this.alerts).length) {
 				this.toggleBlur(false);
 			}

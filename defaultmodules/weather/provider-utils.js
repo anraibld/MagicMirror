@@ -1,14 +1,6 @@
-/**
- * Shared utility functions for weather providers
- */
 
 const SunCalc = require("suncalc");
 
-/**
- * Convert OpenWeatherMap icon codes to internal weather types
- * @param {string} weatherType - OpenWeatherMap icon code (e.g., "01d", "02n")
- * @returns {string|null} Internal weather type
- */
 const convertWeatherType = (weatherType) => {
 	const weatherTypes = {
 		"01d": "day-sunny",
@@ -34,23 +26,11 @@ const convertWeatherType = (weatherType) => {
 	return weatherTypes.hasOwnProperty(weatherType) ? weatherTypes[weatherType] : null;
 };
 
-/**
- * Apply timezone offset to a date
- * @param {Date} date - The date to apply offset to
- * @param {number} offsetMinutes - Timezone offset in minutes
- * @returns {Date} Date with applied offset
- */
 const applyTimezoneOffset = (date, offsetMinutes) => {
 	const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
 	return new Date(utcTime + (offsetMinutes * 60000));
 };
 
-/**
- * Limit decimal places for coordinates (truncate, not round)
- * @param {number} value - The coordinate value
- * @param {number} decimals - Maximum number of decimal places
- * @returns {number} Value with limited decimal places
- */
 const limitDecimals = (value, decimals) => {
 	const str = value.toString();
 	if (str.includes(".")) {
@@ -62,13 +42,6 @@ const limitDecimals = (value, decimals) => {
 	return value;
 };
 
-/**
- * Get sunrise and sunset times for a given date and location
- * @param {Date} date - The date to calculate for
- * @param {number} lat - Latitude
- * @param {number} lon - Longitude
- * @returns {object} Object with sunrise and sunset Date objects
- */
 const getSunTimes = (date, lat, lon) => {
 	const sunTimes = SunCalc.getTimes(date, lat, lon);
 	return {
@@ -77,25 +50,13 @@ const getSunTimes = (date, lat, lon) => {
 	};
 };
 
-/**
- * Check if a given time is during daylight hours
- * @param {Date} date - The date/time to check
- * @param {Date} sunrise - Sunrise time
- * @param {Date} sunset - Sunset time
- * @returns {boolean} True if during daylight hours
- */
 const isDayTime = (date, sunrise, sunset) => {
 	if (!sunrise || !sunset) {
-		return true; // Default to day if times unavailable
+		return true;
 	}
 	return date >= sunrise && date < sunset;
 };
 
-/**
- * Format timezone offset as string (e.g., "+01:00", "-05:30")
- * @param {number} offsetMinutes - Timezone offset in minutes (use -new Date().getTimezoneOffset() for local)
- * @returns {string} Formatted offset string
- */
 const formatTimezoneOffset = (offsetMinutes) => {
 	const hours = Math.floor(Math.abs(offsetMinutes) / 60);
 	const minutes = Math.abs(offsetMinutes) % 60;
@@ -103,11 +64,6 @@ const formatTimezoneOffset = (offsetMinutes) => {
 	return `${sign}${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 };
 
-/**
- * Get date string in YYYY-MM-DD format (local time)
- * @param {Date} date - The date to format
- * @returns {string} Date string in YYYY-MM-DD format
- */
 const getDateString = (date) => {
 	const year = date.getFullYear();
 	const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -115,20 +71,10 @@ const getDateString = (date) => {
 	return `${year}-${month}-${day}`;
 };
 
-/**
- * Convert wind speed from km/h to m/s
- * @param {number} kmh - Wind speed in km/h
- * @returns {number} Wind speed in m/s
- */
 const convertKmhToMs = (kmh) => {
 	return kmh / 3.6;
 };
 
-/**
- * Convert cardinal wind direction string to degrees
- * @param {string} direction - Cardinal direction (e.g., "N", "NNE", "SW")
- * @returns {number|null} Direction in degrees (0-360) or null if unknown
- */
 const cardinalToDegrees = (direction) => {
 	const directions = {
 		N: 0,
@@ -151,12 +97,6 @@ const cardinalToDegrees = (direction) => {
 	return directions[direction] ?? null;
 };
 
-/**
- * Validate and limit coordinate precision
- * @param {object} config - Configuration object with lat/lon properties
- * @param {number} maxDecimals - Maximum decimal places to preserve
- * @throws {Error} If coordinates are missing or invalid
- */
 const validateCoordinates = (config, maxDecimals = 4) => {
 	if (config.lat == null || config.lon == null
 	  || !Number.isFinite(config.lat) || !Number.isFinite(config.lon)) {

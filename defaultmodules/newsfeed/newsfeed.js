@@ -1,11 +1,10 @@
 Module.register("newsfeed", {
-	// Default module config.
 	defaults: {
 		feeds: [
 			{
 				title: "New York Times",
 				url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-				encoding: "UTF-8" //ISO-8859-1
+				encoding: "UTF-8"
 			}
 		],
 		showAsList: false,
@@ -20,12 +19,12 @@ Module.register("newsfeed", {
 		truncDescription: true,
 		lengthDescription: 400,
 		hideLoading: false,
-		reloadInterval: 5 * 60 * 1000, // every 5 minutes
+		reloadInterval: 5 * 60 * 1000,
 		updateInterval: 10 * 1000,
 		animationSpeed: 2.5 * 1000,
-		maxNewsItems: 0, // 0 for unlimited
+		maxNewsItems: 0,
 		ignoreOldItems: false,
-		ignoreOlderThan: 24 * 60 * 60 * 1000, // 1 day
+		ignoreOlderThan: 24 * 60 * 60 * 1000,
 		removeStartTags: "",
 		removeEndTags: "",
 		startTags: [],
@@ -37,29 +36,21 @@ Module.register("newsfeed", {
 		allowedBasicHtmlTags: []
 	},
 
-	// Define required scripts.
 	getScripts () {
 		return ["moment.js"];
 	},
 
-	//Define required styles.
 	getStyles () {
 		return ["newsfeed.css"];
 	},
 
-	// Define required translations.
 	getTranslations () {
-		// The translations for the default modules are defined in the core translation files.
-		// Therefore we can just return false. Otherwise we should have returned a dictionary.
-		// If you're trying to build your own module including translations, check out the documentation.
 		return false;
 	},
 
-	// Define start sequence.
 	start () {
 		Log.info(`Starting module: ${this.name}`);
 
-		// Set locale.
 		moment.locale(globalThis.config.language);
 
 		this.newsItems = [];
@@ -77,7 +68,6 @@ Module.register("newsfeed", {
 		this.isShowingDescription = this.config.showDescription;
 	},
 
-	// Override socket notification handler.
 	socketNotificationReceived (notification, payload) {
 		if (notification === "NEWS_ITEMS") {
 			this.generateFeed(payload);
@@ -99,12 +89,10 @@ Module.register("newsfeed", {
 				this.articleFrameCheckPending = false;
 				this.articleUnavailable = !payload.canFrame;
 				if (!this.articleUnavailable) {
-					// Article can be framed — now shift the bottom bar to allow scrolling
 					document.getElementsByClassName("region bottom bar")[0].classList.add("newsfeed-fullarticle");
 				}
 				this.updateDom(100);
 				if (this.articleUnavailable) {
-					// Briefly show the unavailable message, then return to normal newsfeed view
 					setTimeout(() => {
 						this.resetDescrOrFullArticleAndTimer();
 						this.updateDom(500);
@@ -114,13 +102,11 @@ Module.register("newsfeed", {
 		}
 	},
 
-	//Override getDom to handle the full article case with error handling
 	getDom () {
 		if (this.config.showFullArticle) {
 			this.activeItemHash = this.newsItems[this.activeItem]?.hash;
 			const wrapper = document.createElement("div");
 			if (this.articleFrameCheckPending) {
-				// Still waiting for the server-side framing check
 				wrapper.innerHTML = `<div class="small dimmed">${this.translate("LOADING")}</div>`;
 			} else if (this.articleUnavailable) {
 				wrapper.innerHTML = `<div class="small dimmed">${this.translate("NEWSFEED_ARTICLE_UNAVAILABLE")}</div>`;
@@ -130,8 +116,6 @@ Module.register("newsfeed", {
 				container.scrollTop = this.scrollPosition;
 				const iframe = document.createElement("iframe");
 				iframe.className = "newsfeed-fullarticle";
-				// Always use the direct article URL — the CORS proxy is for server-side
-				// RSS feed fetching, not for browser iframes.
 				const item = this.newsItems[this.activeItem];
 				iframe.src = item ? (typeof item.url === "string" ? item.url : item.url.href) : "";
 				this.articleIframe = iframe;
@@ -144,7 +128,6 @@ Module.register("newsfeed", {
 		return Module.prototype.getDom.call(this);
 	},
 
-	//Override fetching of template name
 	getTemplate () {
 		if (this.config.feedUrl) {
 			return "oldconfig.njk";
@@ -152,7 +135,6 @@ Module.register("newsfeed", {
 		return "newsfeed.njk";
 	},
 
-	//Override template data and return whats used for the current template
 	getTemplateData () {
 		if (this.activeItem >= this.newsItems.length) {
 			this.activeItem = 0;
@@ -200,9 +182,6 @@ Module.register("newsfeed", {
 		}
 	},
 
-	/**
-	 * Registers the feeds to be used by the backend.
-	 */
 	registerFeeds () {
 		for (const feed of this.config.feeds) {
 			this.sendSocketNotification("ADD_FEED", {
@@ -212,12 +191,6 @@ Module.register("newsfeed", {
 		}
 	},
 
-	/**
-	 * Gets a feed property by name
-	 * @param {object} feed A feed object.
-	 * @param {string} property The name of the property.
-	 * @returns {string} The value of the specified property for the feed.
-	 */
 	getFeedProperty (feed, property) {
 		let res = this.config[property];
 		const f = this.config.feeds.find((feedItem) => feedItem.url === feed);
@@ -225,10 +198,6 @@ Module.register("newsfeed", {
 		return res;
 	},
 
-	/**
-	 * Generate an ordered list of items for this configured module.
-	 * @param {object} feeds An object with feeds returned by the node helper.
-	 */
 	generateFeed (feeds) {
 		let newsItems = [];
 		for (const feed in feeds) {
@@ -263,7 +232,6 @@ Module.register("newsfeed", {
 			}, this);
 		}
 		newsItems.forEach((item) => {
-			//Remove selected tags from the beginning of rss feed items (title or description)
 			if (this.config.removeStartTags === "title" || this.config.removeStartTags === "both") {
 				for (const startTag of this.config.startTags) {
 					if (item.title.slice(0, startTag.length) === startTag) {
@@ -282,7 +250,6 @@ Module.register("newsfeed", {
 				}
 			}
 
-			//Remove selected tags from the end of rss feed items (title or description)
 			if (this.config.removeEndTags) {
 				for (const endTag of this.config.endTags) {
 					if (item.title.slice(-endTag.length) === endTag) {
@@ -300,16 +267,13 @@ Module.register("newsfeed", {
 			}
 		});
 
-		// get updated news items and broadcast them
 		const updatedItems = [];
 		newsItems.forEach((value) => {
 			if (this.newsItems.findIndex((value1) => value1 === value) === -1) {
-				// Add item to updated items list
 				updatedItems.push(value);
 			}
 		});
 
-		// check if updated items exist, if so and if we should broadcast these updates, then lets do so
 		if (this.config.broadcastNewsUpdates && updatedItems.length > 0) {
 			this.sendNotification("NEWS_FEED_UPDATE", { items: updatedItems });
 		}
@@ -317,11 +281,6 @@ Module.register("newsfeed", {
 		this.newsItems = newsItems;
 	},
 
-	/**
-	 * Check if this module is configured to show this feed.
-	 * @param {string} feedUrl Url of the feed to check.
-	 * @returns {boolean} True if it is subscribed, false otherwise
-	 */
 	subscribedToFeed (feedUrl) {
 		for (const feed of this.config.feeds) {
 			if (feed.url === feedUrl) {
@@ -331,11 +290,6 @@ Module.register("newsfeed", {
 		return false;
 	},
 
-	/**
-	 * Returns title for the specific feed url.
-	 * @param {string} feedUrl Url of the feed
-	 * @returns {string} The title of the feed
-	 */
 	titleForFeed (feedUrl) {
 		for (const feed of this.config.feeds) {
 			if (feed.url === feedUrl) {
@@ -345,44 +299,22 @@ Module.register("newsfeed", {
 		return "";
 	},
 
-	/**
-	 * Schedule visual update.
-	 */
 	scheduleUpdateInterval () {
 		this.updateDom(this.config.animationSpeed);
 
-		// Broadcast NewsFeed if needed
 		if (this.config.broadcastNewsFeeds) {
 			this.sendNotification("NEWS_FEED", { items: this.newsItems });
 		}
 
-		// #2638 Clear timer if it already exists
 		if (this.timer) clearInterval(this.timer);
 
 		this.timer = setInterval(() => {
 
-			/*
-			 * When animations are enabled, don't update the DOM unless we are actually changing what we are displaying.
-			 * (Animating from a headline to itself is unsightly.)
-			 * Cases:
-			 *
-			 * Number of items | Number of items | Display
-			 * at last update  |   right now     | Behaviour
-			 * ----------------------------------------------------
-			 *     0           |      0          | do not update
-			 *     0           |     >0          | update
-			 *     1           |   0 or >1       | update
-			 *     1           |      1          | update only if item details (hash value) changed
-			 *    >1           |    any          | update
-			 *
-			 * (N.B. We set activeItemCount and activeItemHash in getTemplateData().)
-			 */
 			if (this.newsItems.length > 1 || this.newsItems.length !== this.activeItemCount || this.activeItemHash !== this.newsItems[0]?.hash) {
-				this.activeItem++; // this is OK if newsItems.Length==1; getTemplateData will wrap it around
+				this.activeItem++;
 				this.updateDom(this.config.animationSpeed);
 			}
 
-			// Broadcast NewsFeed if needed
 			if (this.config.broadcastNewsFeeds) {
 				this.sendNotification("NEWS_FEED", { items: this.newsItems });
 			}
@@ -397,7 +329,6 @@ Module.register("newsfeed", {
 		this.articleContainer = null;
 		this.articleFrameCheckPending = false;
 		this.articleUnavailable = false;
-		// reset bottom bar alignment
 		document.getElementsByClassName("region bottom bar")[0].classList.remove("newsfeed-fullarticle");
 		if (!this.timer) {
 			this.scheduleUpdateInterval();
@@ -427,15 +358,12 @@ Module.register("newsfeed", {
 		}
 		else if (notification === "ARTICLE_MORE_DETAILS") {
 			if (this.config.showFullArticle === true) {
-				// iframe already showing — scroll down
 				this.scrollPosition += this.config.scrollLength;
 				if (this.articleContainer) this.articleContainer.scrollTop = this.scrollPosition;
 				Log.debug(`[newsfeed] scrolling down, offset: ${this.scrollPosition}`);
 			} else if (this.isShowingDescription) {
-				// description visible — step up to full article
 				this.showFullArticle();
 			} else {
-				// only title visible — show description first
 				this.isShowingDescription = true;
 				Log.debug("[newsfeed] showing article description");
 				this.updateDom(100);
@@ -480,8 +408,6 @@ Module.register("newsfeed", {
 		}
 		this.isShowingDescription = false;
 		this.config.showFullArticle = true;
-		// Check server-side whether the article URL allows framing.
-		// The bottom bar CSS class is only added once we know the iframe will be shown.
 		this.articleFrameCheckPending = true;
 		this.articleUnavailable = false;
 		const rawUrl = typeof item.url === "string" ? item.url : item.url.href;
