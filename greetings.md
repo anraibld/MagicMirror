@@ -5,18 +5,21 @@
 # Endringer lagres live – ingen omstart nødvendig.
 
 ## anytime
-Hei, du!
-Du ser bra ut!
+Se på den snobepåsen!
+Du såg snaisen ut
+Du ser bra ud!
+Herliga london, så fine du va!
 
 ## morning
 God morgen!
-Ha en fin dag!
-Kaffe først.
+Ha ein fin dag!
+Har du pusset tenner?
 
 ## afternoon
-God ettermiddag!
-Du får til dette!
+God ittemiddag!
+Hey hey, good looking!
+Wow, du ser bra ud
 
 ## evening
 God kveld!
-Tid for å slappe av.
+Er det her det er party?
