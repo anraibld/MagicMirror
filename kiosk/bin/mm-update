@@ -28,6 +28,11 @@ if [ "$new" = "$old" ] && [ "$(mod_heads)" = "$oldmods" ]; then
   "$HOME/.local/bin/mm-deps" >/dev/null 2>&1; log "ingen nye endringer ($(git describe --tags --always))"; exit 0
 fi
 
+LIVE='^greetings\.md$'
+if [ "$(mod_heads)" = "$oldmods" ] && ! git diff --name-only "$old" "$new" | grep -qvE "$LIVE"; then
+  log "kun hilsener oppdatert: ${old:0:8} -> ${new:0:8} (ingen omstart)"; exit 0
+fi
+
 log "oppdaterer: ${old:0:8} -> ${new:0:8}"
 "$HOME/.local/bin/mm-deps"
 systemctl --user restart magicmirror

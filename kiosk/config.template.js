@@ -13,6 +13,8 @@ let config = {
 	logLevel: ["INFO", "LOG", "WARN", "ERROR"],
 	timeFormat: 24,
 	units: "metric",
+	reloadAfterServerRestart: true,
+	checkServerInterval: 10000,
 
 	modules: [
 		{ module: "alert" },
@@ -37,18 +39,7 @@ let config = {
 			header: "Værmelding Stavanger",
 			config: { weatherProvider: "yr", type: "forecast", lat: 58.97, lon: 5.7331, maxNumberOfDays: 5, colored: true }
 		},
-		{
-			module: "compliments",
-			position: "lower_third",
-			config: {
-				compliments: {
-					anytime: ["Hei, du!", "Du ser bra ut!"],
-					morning: ["God morgen!", "Ha en fin dag!", "Kaffe først."],
-					afternoon: ["God ettermiddag!", "Du får til dette!"],
-					evening: ["God kveld!", "Tid for å slappe av."]
-				}
-			}
-		},
+		{ module: "MMM-Greetings", position: "lower_third", config: { file: "greetings.md" } },
 		{
 			module: "MMM-pages",
 			config: {
@@ -60,7 +51,7 @@ let config = {
 				],
 				fixed: [
 					"alert", "MMM-Remote-Control", "MMM-MagicMover", "MMM-WeatherEffects", "clock", "weather",
-					"compliments", "MMM-OnSpotify", "MMM-page-indicator"
+					"MMM-Greetings", "MMM-OnSpotify", "MMM-page-indicator"
 				]
 			}
 		},
