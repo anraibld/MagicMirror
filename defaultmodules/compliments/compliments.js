@@ -2,10 +2,10 @@
 Module.register("compliments", {
 	defaults: {
 		compliments: {
-			anytime: ["Hey there sexy!"],
-			morning: ["Good morning, handsome!", "Enjoy your day!", "How was your sleep?"],
-			afternoon: ["Hello, beauty!", "You look sexy!", "Looking good today!"],
-			evening: ["Wow, you look hot!", "You look nice!", "Hi, sexy!"],
+			anytime: ["Sjekk ut den snobepåsen!"],
+			morning: ["God morgen kjekken!", "Nyt dagen!", "Trøtt i trynet?"],
+			afternoon: ["Så flotte du va!", "Du ser bra ut!", "Tror du må fiksa deg litt på håret!"],
+			evening: ["Wow, se på deg!", "Fine du va!", "Hei, sexy!"],
 			"....-01-01": ["Happy new year!"]
 		},
 		updateInterval: 30000,
