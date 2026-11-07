@@ -56,7 +56,29 @@ const config = {
 				lon: -73.971321
 			}
 		},
-		{
+{
+    module: "MMM-NotificationTrigger",
+    config: {
+        useWebhook: true,
+        triggers: [
+            {
+                trigger: "DADDYS_HOME",
+                fires: [
+                    {
+                        fire: "SHOW_ALERT",
+                        payload: {
+                            type: "notification",
+                            title: "WELCOME HOME",
+                            message: "DADDY",
+                            timer: 15000
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+},		
+{
 			module: "weather",
 			position: "bottom_right",
 			header: "Weather Forecast",
