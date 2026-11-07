@@ -1,3 +1,4 @@
+
 const config = {
 	address: "localhost",
 	port: 8080,
@@ -52,43 +53,43 @@ const config = {
 			config: {
 				weatherProvider: "openmeteo",
 				type: "current",
-				lat:  58.9700,
+				lat: 58.9700,
 				lon: 5.7331,
 			}
 		},
+		{
 			module: "weather",
 			position: "bottom_right",
 			header: "Weather Forecast",
 			config: {
 				weatherProvider: "openmeteo",
 				type: "forecast",
-				lat:  58.9700,
+				lat: 58.9700,
 				lon: 5.7331,
 			}
 		},
-{
-    module: "MMM-NotificationTrigger",
-    config: {
-        useWebhook: true,
-        triggers: [
-            {
-                trigger: "DADDYS_HOME",
-                fires: [
-                    {
-                        fire: "SHOW_ALERT",
-                        payload: {
-                            type: "notification",
-                            title: "WELCOME HOME",
-                            message: "DADDY",
-                            timer: 15000
-                        }
-                    }
-                ]
-            }
-        ]
-    }
-},		
-{
+		{
+			module: "MMM-NotificationTrigger",
+			config: {
+				useWebhook: true,
+				triggers: [
+					{
+						trigger: "DADDYS_HOME",
+						fires: [
+							{
+								fire: "SHOW_ALERT",
+								payload: {
+									type: "notification",
+									title: "WELCOME HOME",
+									message: "DADDY",
+									timer: 15000
+								}
+							}
+						]
+					}
+				]
+			}
+		},
 		{
 			module: "newsfeed",
 			position: "bottom_bar",
