@@ -52,8 +52,18 @@ const config = {
 			config: {
 				weatherProvider: "openmeteo",
 				type: "current",
-				lat: 40.776676,
-				lon: -73.971321
+				lat:  58.9700,
+				lon: 5.7331,
+			}
+		},
+			module: "weather",
+			position: "bottom_right",
+			header: "Weather Forecast",
+			config: {
+				weatherProvider: "openmeteo",
+				type: "forecast",
+				lat:  58.9700,
+				lon: 5.7331,
 			}
 		},
 {
@@ -79,23 +89,13 @@ const config = {
     }
 },		
 {
-			module: "weather",
-			position: "bottom_right",
-			header: "Weather Forecast",
-			config: {
-				weatherProvider: "openmeteo",
-				type: "forecast",
-				lat: 40.776676,
-				lon: -73.971321
-			}
-		},
 		{
 			module: "newsfeed",
 			position: "bottom_bar",
 			config: {
 				feeds: [
 					{
-						title: "New York Times",
+						title: "Lokale nyheter",
 						url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
 					}
 				],
