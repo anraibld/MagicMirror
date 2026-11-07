@@ -13,8 +13,7 @@ Jøss, der va du igjen!
 Speilet lyge isje. Som regel.
 Ikkje stå der å glan, kom deg avgårde!
 Viking te me dør!
-Du e på toppen av verden, i hvert fall her på Storhaug!
-Me to går ikkje alltid aleina – me har jo heisen!
+Me to går isje alltid aleina – me har jo heisen!
 Så kjekt å se deg
 Se på den luringen
 Du har pynta deg for speilet ser eg..
@@ -30,7 +29,7 @@ Opp og hopp, Stavanger!
 Verden vente isje, men kaffien gjør.
 Har du huska alt? Neppe.
 Du ser jo nesten våken ut!
-Tore Tang har sikkert sett verre morgener enn dette.
+Tore Tang har sikkert sett værre morninger enn dette.
 
 ## afternoon
 God ittemiddag!
