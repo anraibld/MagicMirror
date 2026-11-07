@@ -58,7 +58,7 @@ const config = {
 		},
 		{
 			module: "weather",
-			position: "top_right",
+			position: "bottom_right",
 			header: "Weather Forecast",
 			config: {
 				weatherProvider: "openmeteo",
