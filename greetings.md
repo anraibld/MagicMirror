@@ -11,7 +11,7 @@ Du ser bra ud!
 Herliga london, så fine du va!
 Jøss, der va du igjen!
 Speilet lyge isje. Som regel.
-Ikkje stå der å glan, kom deg avgårde!
+Isje stå der å glan, kom deg avgårde!
 Viking te me dør!
 Me to går isje alltid aleina – me har jo heisen!
 Så kjekt å se deg
