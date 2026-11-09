@@ -12,7 +12,7 @@ Herliga london, så fine du va!
 Jøss, der va du igjen!
 Speilet lyge isje. Som regel.
 Isje stå der å glan, kom deg avgårde!
-Viking te me dør!
+Drømmen leve det sga bli en blåe dag.
 Me to går isje alltid aleina – me har jo heisen!
 Så kjekt å se deg
 Se på den luringen
